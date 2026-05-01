@@ -1,6 +1,7 @@
-import { app, BrowserWindow } from 'electron';
+import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
+import { getCurrentSummoner, getMatchHistory } from './api/lcu';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
@@ -29,6 +30,23 @@ const createWindow = () => {
   // Open the DevTools.
   mainWindow.webContents.openDevTools();
 };
+
+// IPC handlers
+ipcMain.handle('get-current-summoner', async () => {
+  try {
+    return await getCurrentSummoner();
+  } catch (error) {
+    return { error: error.message };
+  }
+});
+
+ipcMain.handle('get-match-history', async () => {
+  try {
+    return await getMatchHistory();
+  } catch (error) {
+    return { error: error.message };
+  }
+});
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
