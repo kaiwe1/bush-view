@@ -1,6 +1,6 @@
 import https from 'https';
-import fs from 'fs';
-import path from 'path';
+import { execSync } from 'child_process';
+import type { SummonerInfo, MatchInfo } from '../../shared/types';
 
 interface LCUCredentials {
   port: number;
@@ -8,33 +8,33 @@ interface LCUCredentials {
 }
 
 export function getLCUCredentials(): LCUCredentials | null {
-  const lockfilePath = path.join(
-    process.env['ProgramData'] || 'C:\\ProgramData',
-    'Riot Games',
-    'League of Legends',
-    'lockfile'
-  );
+  try {
+    const output = execSync(
+      "wmic PROCESS WHERE name='LeagueClientUx.exe' GET commandline",
+      { encoding: 'utf-8', timeout: 5000 }
+    );
 
-  if (!fs.existsSync(lockfilePath)) {
+    const authTokenMatch = output.match(/--remoting-auth-token=([^\s"']+)/);
+    const appPortMatch = output.match(/--app-port=(\d+)/);
+
+
+    if (!authTokenMatch || !appPortMatch) {
+      return null;
+    }
+
+    return {
+      port: parseInt(appPortMatch[1], 10),
+      password: authTokenMatch[1],
+    };
+  } catch {
     return null;
   }
-
-  const lockfile = fs.readFileSync(lockfilePath, 'utf-8');
-  const parts = lockfile.split(':');
-  if (parts.length < 5) {
-    return null;
-  }
-
-  return {
-    port: parseInt(parts[2], 10),
-    password: parts[3],
-  };
 }
 
 export function makeLCURequest(endpoint: string, method = 'GET', data?: unknown): Promise<unknown> {
   const creds = getLCUCredentials();
   if (!creds) {
-    throw new Error('League client not running or lockfile not found');
+    throw new Error('League client not running or credentials not found');
   }
 
   const url = `https://127.0.0.1:${creds.port}${endpoint}`;
@@ -73,10 +73,10 @@ export function makeLCURequest(endpoint: string, method = 'GET', data?: unknown)
   });
 }
 
-export async function getCurrentSummoner() {
-  return await makeLCURequest('/lol-summoner/v1/current-summoner');
+export async function getCurrentSummoner(): Promise<SummonerInfo> {
+  return await makeLCURequest('/lol-summoner/v1/current-summoner') as Promise<SummonerInfo>;
 }
 
-export async function getMatchHistory() {
-  return await makeLCURequest('/lol-match-history/v1/products/lol/current-summoner/matches');
+export async function getMatchHistory(): Promise<MatchInfo> {
+  return await makeLCURequest('/lol-match-history/v1/products/lol/current-summoner/matches') as Promise<MatchInfo>;
 }

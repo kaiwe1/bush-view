@@ -1,14 +1,9 @@
 import { useState } from 'react';
 import { getChampionStats, getSummonerStats } from './api/opgg';
+import type { ChampionStats } from './api/opgg';
+import type { SummonerInfo, MatchInfo } from '../shared/types';
 
-type SummonerInfo = {
-  displayName: string;
-  summonerLevel: number;
-};
-
-type MatchHistory = unknown;
-
-type OPGGSummonerInfo = {
+type OpggSummonerInfo = {
   level: string;
   rank: string;
 };
@@ -17,16 +12,16 @@ declare global {
   interface Window {
     electronAPI: {
       getCurrentSummoner: () => Promise<SummonerInfo | { error: string }>;
-      getMatchHistory: () => Promise<MatchHistory | { error: string }>;
+      getMatchHistory: () => Promise<MatchInfo | { error: string }>;
     };
   }
 }
 
 function App() {
   const [summoner, setSummoner] = useState<SummonerInfo | null>(null);
-  const [matches, setMatches] = useState<MatchHistory | null>(null);
-  const [champions, setChampions] = useState<unknown[]>([]);
-  const [opggSummoner, setOggSummoner] = useState<OPGGSummonerInfo | null>(null);
+  const [matches, setMatches] = useState<MatchInfo | null>(null);
+  const [champions, setChampions] = useState<ChampionStats[]>([]);
+  const [opggSummoner, setOpggSummoner] = useState<OpggSummonerInfo | null>(null);
   const [searchName, setSearchName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -85,7 +80,7 @@ function App() {
     try {
       const data = await getSummonerStats(searchName.trim());
       if (data) {
-        setOggSummoner(data);
+        setOpggSummoner(data);
       } else {
         setError('未找到 op.gg 召唤师数据');
       }
@@ -119,7 +114,7 @@ function App() {
       {summoner && (
         <div>
           <h2>召唤师信息</h2>
-          <p>名称: {summoner.displayName}</p>
+          <p>名称: {summoner.gameName}</p>
           <p>等级: {summoner.summonerLevel}</p>
         </div>
       )}
@@ -140,14 +135,11 @@ function App() {
         <div>
           <h2>英雄数据</h2>
           <ul>
-            {champions.map((champ, index) => {
-              const item = champ as { name: string; winRate: string; pickRate: string };
-              return (
-                <li key={index}>
-                  {item.name}: 胜率 {item.winRate}, 登场率 {item.pickRate}
-                </li>
-              );
-            })}
+            {champions.map((champ, index) => (
+              <li key={index}>
+                {champ.name}: 胜率 {champ.winRate}, 登场率 {champ.pickRate}
+              </li>
+            ))}
           </ul>
         </div>
       )}

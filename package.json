@@ -15,7 +15,7 @@
   "keywords": [],
   "author": {
     "name": "kaiwei",
-    "email": "kaiwei.zh@qq.com"
+    "email": "me@kaiweizhang.com"
   },
   "license": "MIT",
   "devDependencies": {
@@ -35,11 +35,11 @@
     "eslint": "^8.57.1",
     "eslint-plugin-import": "^2.32.0",
     "typescript": "~4.5.4",
-    "vite": "^5.4.21"
+    "vite": "^5.4.21",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3"
   },
   "dependencies": {
-    "@types/react": "^19.2.14",
-    "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^4.7.0",
     "axios": "^1.15.2",
     "cheerio": "^1.2.0",
