@@ -5,4 +5,5 @@ import { contextBridge, ipcRenderer } from 'electron';
 contextBridge.exposeInMainWorld('electronAPI', {
   getCurrentSummoner: () => ipcRenderer.invoke('get-current-summoner'),
   getMatchHistory: () => ipcRenderer.invoke('get-match-history'),
+  getLoginSession: () => ipcRenderer.invoke('get-login-session'),
 });

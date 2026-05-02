@@ -1,6 +1,6 @@
 import https from 'https';
 import { execSync } from 'child_process';
-import type { SummonerInfo, MatchInfo } from '../../shared/types';
+import type { SummonerInfo, MatchInfo, LoginSession } from '../../shared/types';
 
 interface LCUCredentials {
   port: number;
@@ -75,6 +75,10 @@ export function makeLCURequest(endpoint: string, method = 'GET', data?: unknown)
 
 export async function getCurrentSummoner(): Promise<SummonerInfo> {
   return await makeLCURequest('/lol-summoner/v1/current-summoner') as Promise<SummonerInfo>;
+}
+
+export async function getLoginSession(): Promise<LoginSession> {
+  return await makeLCURequest('/lol-login/v1/session') as Promise<LoginSession>;
 }
 
 export async function getMatchHistory(): Promise<MatchInfo> {

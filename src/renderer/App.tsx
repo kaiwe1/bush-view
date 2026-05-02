@@ -1,7 +1,8 @@
 import { useState } from 'react';
 import { getChampionStats, getSummonerStats } from './api/opgg';
 import type { ChampionStats } from './api/opgg';
-import type { SummonerInfo, MatchInfo } from '../shared/types';
+import type { SummonerInfo, MatchInfo, LoginSession } from '../shared/types';
+import { getProfileIconUrl, getPlatformName, getPlatformIdFromToken } from './utils';
 
 type OpggSummonerInfo = {
   level: string;
@@ -13,12 +14,15 @@ declare global {
     electronAPI: {
       getCurrentSummoner: () => Promise<SummonerInfo | { error: string }>;
       getMatchHistory: () => Promise<MatchInfo | { error: string }>;
+      getLoginSession: () => Promise<LoginSession | { error: string }>;
     };
   }
 }
 
+
 function App() {
   const [summoner, setSummoner] = useState<SummonerInfo | null>(null);
+  const [platformId, setPlatformId] = useState<string | null>(null);
   const [matches, setMatches] = useState<MatchInfo | null>(null);
   const [champions, setChampions] = useState<ChampionStats[]>([]);
   const [opggSummoner, setOpggSummoner] = useState<OpggSummonerInfo | null>(null);
@@ -30,11 +34,23 @@ function App() {
     setLoading(true);
     setError(null);
     try {
-      const data = await window.electronAPI.getCurrentSummoner();
-      if ('error' in data) {
-        setError(data.error);
+      const [summonerData, sessionData] = await Promise.all([
+        window.electronAPI.getCurrentSummoner(),
+        window.electronAPI.getLoginSession(),
+      ]);
+      console.log('Received summoner data:', summonerData);
+      console.log('Received login session:', sessionData);
+      if ('error' in summonerData) {
+        setError(summonerData.error);
       } else {
-        setSummoner(data);
+        setSummoner(summonerData);
+      }
+      if ('error' in sessionData && !('idToken' in sessionData)) {
+        console.warn('Failed to fetch login session:', sessionData.error);
+      } else {
+        const pid = getPlatformIdFromToken(sessionData.idToken);
+        console.log('Extracted platform ID from token:', pid);
+        if (pid) setPlatformId(pid);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to fetch summoner data');
@@ -47,6 +63,7 @@ function App() {
     setError(null);
     try {
       const data = await window.electronAPI.getMatchHistory();
+      console.log('Received match history data:', data);
       if (data && typeof data === 'object' && 'error' in data) {
         setError(data.error);
       } else {
@@ -114,8 +131,30 @@ function App() {
       {summoner && (
         <div>
           <h2>召唤师信息</h2>
-          <p>名称: {summoner.gameName}</p>
-          <p>等级: {summoner.summonerLevel}</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '12px' }}>
+            <img
+              src={getProfileIconUrl(summoner.profileIconId)}
+              alt="头像"
+              style={{ width: '64px', height: '64px', borderRadius: '50%', border: '2px solid #c8a858' }}
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+            />
+            <div>
+              <p style={{ margin: '0 0 4px', fontSize: '18px', fontWeight: 'bold' }}>
+                {summoner.gameName}#{summoner.tagLine}
+              </p>
+              <p style={{ margin: '0 0 2px', fontSize: '14px', color: '#666' }}>
+                用户ID: {summoner.summonerId}
+              </p>
+              {platformId && (
+                <p style={{ margin: '0 0 2px', fontSize: '14px', color: '#666' }}>
+                  区服: {getPlatformName(platformId)}
+                </p>
+              )}
+              <p style={{ margin: 0, fontSize: '14px', color: '#666' }}>
+                等级: {summoner.summonerLevel}
+              </p>
+            </div>
+          </div>
         </div>
       )}
       {opggSummoner && (

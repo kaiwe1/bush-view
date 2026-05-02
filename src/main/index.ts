@@ -1,7 +1,7 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
-import { getCurrentSummoner, getMatchHistory } from './api/lcu';
+import { getCurrentSummoner, getMatchHistory, getLoginSession } from './api/lcu';
 
 // IPC handlers
 ipcMain.handle('get-current-summoner', async () => {
@@ -18,6 +18,17 @@ ipcMain.handle('get-current-summoner', async () => {
 ipcMain.handle('get-match-history', async () => {
   try {
     return await getMatchHistory();
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return { error: error.message };
+    }
+    return { error: 'An unknown error occurred' };
+  }
+});
+
+ipcMain.handle('get-login-session', async () => {
+  try {
+    return await getLoginSession();
   } catch (error: unknown) {
     if (error instanceof Error) {
       return { error: error.message };
