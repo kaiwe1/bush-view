@@ -11,6 +11,10 @@
     "sourceMap": true,
     "outDir": "dist",
     "resolveJsonModule": true,
-    "lib": ["ESNext", "DOM"]
+    "lib": ["ESNext", "DOM"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   }
 }
