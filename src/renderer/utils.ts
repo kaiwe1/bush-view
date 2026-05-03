@@ -3,17 +3,22 @@ import type { LoginTokenPayload, Game, Participant } from '../shared/types';
 
 const CDRAGON_BASE = 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default';
 
+/** 将 CDragon 直链转为本地缓存协议的 URL */
+function cachedUrl(httpsUrl: string): string {
+  return httpsUrl.replace('https://', 'cached-cdragon://');
+}
+
 const PROFILE_ICON_BASE = `${CDRAGON_BASE}/v1/profile-icons`;
 
 export function getProfileIconUrl(iconId: number): string {
-  return `${PROFILE_ICON_BASE}/${iconId}.jpg`;
+  return cachedUrl(`${PROFILE_ICON_BASE}/${iconId}.jpg`);
 }
 
 const RANK_EMBLEM_BASE = 'https://raw.communitydragon.org/latest/plugins/rcp-fe-lol-shared-components/global/default';
 
 /** 获取排位徽章图片 URL（communityDragon） */
 export function getRankEmblemUrl(tier: string): string {
-  return `${RANK_EMBLEM_BASE}/images/${tier.toLowerCase()}.png`;
+  return cachedUrl(`${RANK_EMBLEM_BASE}/images/${tier.toLowerCase()}.png`);
 }
 
 // ============================================================
@@ -231,7 +236,7 @@ export function getPlatformIdFromToken(idToken: string): string | null {
 // ============================================================
 
 export function getChampionIconUrl(championId: number): string {
-  return `${CDRAGON_BASE}/v1/champion-icons/${championId}.png`;
+  return cachedUrl(`${CDRAGON_BASE}/v1/champion-icons/${championId}.png`);
 }
 
 // ============================================================
@@ -259,7 +264,7 @@ export async function preloadSummonerSpellIcons(): Promise<void> {
         if (spell.id && spell.iconPath) {
           const filename = spell.iconPath.split('/').pop()?.toLowerCase();
           if (filename) {
-            map.set(spell.id, `${SPELL_ICONS_BASE}/${filename}`);
+            map.set(spell.id, cachedUrl(`${SPELL_ICONS_BASE}/${filename}`));
           }
         }
       }
@@ -277,7 +282,7 @@ export function getSummonerSpellIconUrl(spellId: number): string | null {
   if (!spellIconMap) {
     preloadSummonerSpellIcons();
     // fallback: try the v1 API while the map loads
-    return `${CDRAGON_BASE}/v1/spell-icons/${spellId}.png`;
+    return cachedUrl(`${CDRAGON_BASE}/v1/spell-icons/${spellId}.png`);
   }
   return spellIconMap.get(spellId) ?? null;
 }
@@ -307,7 +312,7 @@ export async function preloadItemIcons(): Promise<void> {
         if (item.id && item.iconPath) {
           const filename = item.iconPath.split('/').pop()?.toLowerCase();
           if (filename) {
-            map.set(item.id, `${ITEM_ICONS_BASE}/${filename}`);
+            map.set(item.id, cachedUrl(`${ITEM_ICONS_BASE}/${filename}`));
           }
         }
       }
@@ -325,7 +330,7 @@ export function getItemIconUrl(itemId: number): string | null {
   // start loading on first call, but return fallback URL synchronously
   if (!itemIconMap) {
     preloadItemIcons();
-    return `${CDRAGON_BASE}/v1/items/${itemId}.png`;
+    return cachedUrl(`${CDRAGON_BASE}/v1/items/${itemId}.png`);
   }
   return itemIconMap.get(itemId) ?? null;
 }
@@ -433,14 +438,14 @@ const STYLE_ICON_FILE: Record<number, string> = {
 export function getPerkStyleIconUrl(styleId: number): string | null {
   const filename = STYLE_ICON_FILE[styleId];
   if (!filename) return null;
-  return `https://raw.communitydragon.org/latest/game/assets/perks/styles/${filename}.png`;
+  return cachedUrl(`https://raw.communitydragon.org/latest/game/assets/perks/styles/${filename}.png`);
 }
 
 export function getPerkIconUrl(perkId: number, primaryStyleId: number): string | null {
   const styleName = STYLE_ID_TO_NAME[primaryStyleId];
   const path = PERK_PATH_MAP.get(perkId);
   if (!styleName || !path) return null;
-  return `https://raw.communitydragon.org/latest/game/assets/perks/styles/${styleName}/${path}.png`;
+  return cachedUrl(`https://raw.communitydragon.org/latest/game/assets/perks/styles/${styleName}/${path}.png`);
 }
 
 // ============================================================

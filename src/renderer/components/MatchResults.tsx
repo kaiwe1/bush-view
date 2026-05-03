@@ -226,7 +226,7 @@ export function MatchResults({
                   className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-muted/50"
                 >
                   <img
-                    src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${champ.championId}.png`}
+                    src={getChampionIconUrl(champ.championId)}
                     alt={`英雄 ${champ.championId}`}
                     className="w-8 h-8 rounded-full"
                     onError={(e) => {

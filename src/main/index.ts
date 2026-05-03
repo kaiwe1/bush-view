@@ -1,7 +1,8 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, protocol } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import { getCurrentSummoner, getCurrentSummonerMatchHistory, getGameById, getLoginSession, lookupAlias, getSummonerByPuuid, getMatchHistoryByPuuid, getRankedStats } from './api/lcu';
+import { getOrDownloadImage } from './imageCache';
 
 // IPC handlers
 ipcMain.handle('get-current-summoner', async () => {
@@ -92,6 +93,11 @@ ipcMain.handle('get-ranked-stats', async (_event, puuid: string) => {
   }
 });
 
+// Register custom scheme (must be called before app.ready).
+protocol.registerSchemesAsPrivileged([
+  { scheme: 'cached-cdragon', privileges: { standard: true, secure: true, supportFetchAPI: true } },
+]);
+
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) {
   app.quit();
@@ -123,7 +129,25 @@ const createWindow = () => {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.on('ready', createWindow);
+app.on('ready', () => {
+  // Register protocol handler (must be after app.ready).
+  protocol.handle('cached-cdragon', async (request) => {
+    try {
+      const { data, mimeType } = await getOrDownloadImage(request.url);
+      return new Response(data, {
+        status: 200,
+        headers: {
+          'content-type': mimeType,
+          'cache-control': 'public, max-age=31536000, immutable',
+        },
+      });
+    } catch {
+      return new Response('', { status: 404 });
+    }
+  });
+
+  createWindow();
+});
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
