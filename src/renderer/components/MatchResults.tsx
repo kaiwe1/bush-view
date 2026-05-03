@@ -8,16 +8,25 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type { SummonerInfo, MatchInfo, Game } from '../../shared/types';
+import type { SummonerInfo, MatchInfo, Game, RankedStats } from '../../shared/types';
 import {
   getProfileIconUrl,
   getPlatformName,
+  getChampionIconUrl,
+  getGamePlayers,
   formatDuration,
   formatGameMode,
   findPlayerParticipant,
+  formatTierDivision,
+  formatQueueType,
+  getRankEmblemUrl,
   type KdaStats,
   type ChampionUsage,
+  type GamePlayer,
 } from '../utils';
+
+const RANKED_QUEUES = ['RANKED_SOLO_5x5', 'RANKED_FLEX_SR'] as const;
+
 
 interface MatchResultsProps {
   summoner: SummonerInfo;
@@ -26,6 +35,7 @@ interface MatchResultsProps {
   kdaStats: KdaStats | null;
   championUsage: ChampionUsage[];
   recentGames: Game[];
+  rankedStats: RankedStats | null;
 }
 
 export function MatchResults({
@@ -35,37 +45,110 @@ export function MatchResults({
   kdaStats,
   championUsage,
   recentGames,
+  rankedStats,
 }: MatchResultsProps) {
   return (
     <div className="space-y-6">
       {/* Summoner Card */}
       <Card>
-        <CardHeader className="flex flex-row items-center gap-4 space-y-0">
-          <img
-            src={getProfileIconUrl(summoner.profileIconId)}
-            alt="头像"
-            className="w-20 h-20 rounded-full border-2 border-amber-400"
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.display = 'none';
-            }}
-          />
-          <div className="flex flex-col gap-1.5">
-            <CardTitle className="text-2xl">
-              {summoner.gameName}
-              <span className="text-muted-foreground font-normal">
-                #{summoner.tagLine}
-              </span>
-            </CardTitle>
-            <div className="flex flex-wrap gap-1.5">
-              <Badge variant="secondary">Lv.{summoner.summonerLevel}</Badge>
-              {platformId && <Badge>{getPlatformName(platformId)}</Badge>}
+        <CardContent className="flex items-center gap-6 pt-6">
+          {/* 左侧：召唤师基本信息 */}
+          <div className="flex items-center gap-4">
+            <img
+              src={getProfileIconUrl(summoner.profileIconId)}
+              alt="头像"
+              className="w-20 h-20 rounded-full border-2 border-amber-400 flex-shrink-0"
+              onError={(e) => {
+                (e.target as HTMLImageElement).style.display = 'none';
+              }}
+            />
+            <div className="flex flex-col gap-1.5">
+              <h2 className="text-2xl font-semibold tracking-tight">
+                {summoner.gameName}
+                <span className="text-muted-foreground font-normal">
+                  #{summoner.tagLine}
+                </span>
+              </h2>
+              <div className="flex flex-wrap gap-1.5">
+                <Badge variant="secondary">Lv.{summoner.summonerLevel}</Badge>
+                {platformId && <Badge>{getPlatformName(platformId)}</Badge>}
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-2 flex-1 max-w-48 rounded-full bg-muted overflow-hidden">
+                  <div
+                    className="h-full rounded-full bg-amber-400 transition-all"
+                    style={{
+                      width: `${(summoner.xpSinceLastLevel / (summoner.xpSinceLastLevel + summoner.xpUntilNextLevel)) * 100}%`,
+                    }}
+                  />
+                </div>
+                <span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">
+                  {summoner.xpSinceLastLevel.toLocaleString()} / {(summoner.xpSinceLastLevel + summoner.xpUntilNextLevel).toLocaleString()} XP
+                </span>
+              </div>
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
-          <p className="text-xs text-muted-foreground">
-            召唤师 ID: {summoner.summonerId}
-          </p>
+
+          {/* 右侧：排位段位 */}
+          {rankedStats && (
+            <div className="ml-auto flex items-center gap-3">
+              {RANKED_QUEUES.map((queue) => {
+                const entry = rankedStats.queueMap[queue];
+                console.log('Ranked entry for queue', queue, entry, entry.losses);
+                return (
+                  <div
+                    key={queue}
+                    className="rounded-lg border bg-muted/30 px-4 py-3 min-w-[160px]"
+                  >
+                    <div className="flex items-center gap-2 mb-1.5">
+                      {entry?.tier ? (
+                        <img
+                          src={getRankEmblemUrl(entry.tier)}
+                          alt={entry.tier}
+                          className="w-8 h-8"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
+                        />
+                      ) : (
+                        <div className="w-8 h-8 rounded-full bg-muted" />
+                      )}
+                      <div>
+                        <p className="text-xs text-muted-foreground">
+                          {formatQueueType(queue)}
+                        </p>
+                        <p className="text-base font-bold">
+                          {entry?.tier
+                            ? formatTierDivision(entry.tier, entry.division)
+                            : '未定级'}
+                        </p>
+                      </div>
+                    </div>
+                    {entry?.tier ? (
+                      <div className="flex gap-3 text-xs text-muted-foreground">
+                        <span>{entry.leaguePoints} LP</span>
+                        <span className="text-green-600">{entry.wins}胜</span>
+                        {entry.losses > 0 ? (
+                          <>
+                            <span className="text-red-500">{entry.losses}负</span>
+                            {entry.wins + entry.losses > 0 && (
+                              <span>
+                                胜率 {((entry.wins / (entry.wins + entry.losses)) * 100).toFixed(0)}%
+                              </span>
+                            )}
+                          </>
+                        ) : (
+                          <span className="text-red-500">-</span>
+                        )}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground mt-1">暂无数据</p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -94,26 +177,39 @@ export function MatchResults({
               <div className="text-center">
                 <p className="text-xs text-muted-foreground">KDA</p>
                 <p
-                  className={`text-2xl font-bold tabular-nums ${
-                    parseFloat(kdaStats.kda) >= 3
+                  className={`text-2xl font-bold tabular-nums ${parseFloat(kdaStats.kda) >= 3
                       ? 'text-green-500'
                       : parseFloat(kdaStats.kda) >= 2
                         ? 'text-amber-500'
                         : 'text-red-500'
-                  }`}
+                    }`}
                 >
                   {kdaStats.kda}
                 </p>
               </div>
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground">胜率</p>
+                <p
+                  className={`text-2xl font-bold tabular-nums ${
+                    parseInt(kdaStats.winRate) >= 60
+                      ? 'text-green-500'
+                      : parseInt(kdaStats.winRate) >= 45
+                        ? 'text-amber-500'
+                        : 'text-red-500'
+                  }`}
+                >
+                  {kdaStats.winRate}%
+                </p>
+              </div>
             </div>
             <p className="text-xs text-muted-foreground mt-3">
-              统计范围：最近 {matches?.games?.gameCount ?? kdaStats.games} 场（成功匹配 {kdaStats.games} 场）
+              统计范围：最近 {matches?.games?.gameCount ?? kdaStats.games} 场
             </p>
           </CardContent>
         </Card>
       )}
 
-      {/* Champion Usage */}
+      {/* 英雄使用情况 */}
       {championUsage.length > 0 && (
         <Card>
           <CardHeader>
@@ -148,11 +244,11 @@ export function MatchResults({
         </Card>
       )}
 
-      {/* Recent Games */}
+      {/* 最近游戏 */}
       {recentGames.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>最近 {recentGames.length} 场游戏</CardTitle>
+            <CardTitle>近期对局</CardTitle>
           </CardHeader>
           <CardContent>
             <Table>
@@ -160,6 +256,8 @@ export function MatchResults({
                 <TableRow>
                   <TableHead className="w-16">结果</TableHead>
                   <TableHead>模式</TableHead>
+                  <TableHead className="w-[280px]">玩家</TableHead>
+                  <TableHead>时间</TableHead>
                   <TableHead>K / D / A</TableHead>
                   <TableHead>时长</TableHead>
                   <TableHead className="text-right">版本</TableHead>
@@ -174,11 +272,54 @@ export function MatchResults({
                   return (
                     <TableRow key={game.gameId}>
                       <TableCell>
-                        <Badge variant={win ? 'default' : 'destructive'}>
+                        <span className={win ? 'text-blue-500 font-semibold' : 'text-red-500 font-semibold'}>
                           {win ? '胜利' : '失败'}
-                        </Badge>
+                        </span>
                       </TableCell>
                       <TableCell className="text-sm">{formatGameMode(game)}</TableCell>
+                      <TableCell>
+                        {(() => {
+                          const players = getGamePlayers(game);
+                          const blue = players.filter((p) => p.teamId === 100);
+                          const red = players.filter((p) => p.teamId === 200);
+                          const renderTeam = (team: GamePlayer[]) => (
+                            <div className="flex flex-col gap-0.5">
+                              {team.map((p, i) => (
+                                <div key={i} className="flex items-center gap-1">
+                                  <img
+                                    src={getChampionIconUrl(p.championId)}
+                                    alt=""
+                                    className="w-4 h-4 rounded-full"
+                                    onError={(e) => {
+                                      (e.target as HTMLImageElement).style.display = 'none';
+                                    }}
+                                  />
+                                  <span className="text-xs truncate max-w-[100px]">
+                                    {p.gameName}
+                                    <span className="text-muted-foreground">#{p.tagLine}</span>
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          );
+                          return (
+                            <div className="flex gap-3">
+                              <div>{renderTeam(blue)}</div>
+                              <div>{renderTeam(red)}</div>
+                            </div>
+                          );
+                        })()}
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
+                        {game.gameCreationDate
+                          ? new Date(game.gameCreationDate).toLocaleString('zh-CN', {
+                              month: '2-digit',
+                              day: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })
+                          : '-'}
+                      </TableCell>
                       <TableCell className="font-mono text-sm tabular-nums">
                         {participant ? (
                           <>
@@ -198,7 +339,7 @@ export function MatchResults({
                         {formatDuration(game.gameDuration)}
                       </TableCell>
                       <TableCell className="text-right text-sm text-muted-foreground">
-                        {game.gameVersion}
+                        {game.gameVersion?.split('.').slice(0, 2).join('.')}
                       </TableCell>
                     </TableRow>
                   );

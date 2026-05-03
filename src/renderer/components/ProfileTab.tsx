@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, User } from 'lucide-react';
-import type { SummonerInfo, MatchInfo, Game } from '../../shared/types';
+import type { SummonerInfo, MatchInfo, Game, RankedStats } from '../../shared/types';
 import { getPlatformIdFromToken, calculateKDA, getChampionUsage } from '../utils';
 import type { KdaStats, ChampionUsage } from '../utils';
 import { MatchResults } from './MatchResults';
@@ -11,6 +11,7 @@ export function ProfileTab() {
   const [summoner, setSummoner] = useState<SummonerInfo | null>(null);
   const [platformId, setPlatformId] = useState<string | null>(null);
   const [matches, setMatches] = useState<MatchInfo | null>(null);
+  const [rankedStats, setRankedStats] = useState<RankedStats | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -19,9 +20,9 @@ export function ProfileTab() {
     Promise.all([
       window.electronAPI.getCurrentSummoner(),
       window.electronAPI.getLoginSession(),
-      window.electronAPI.getMatchHistory(),
+      window.electronAPI.getCurrentSummonerMatchHistory(),
     ])
-      .then(([summonerData, sessionData, matchData]) => {
+      .then(async ([summonerData, sessionData, matchData]) => {
         if ('error' in summonerData) {
           setError(summonerData.error);
           return;
@@ -34,7 +35,30 @@ export function ProfileTab() {
         }
 
         if (matchData && !('error' in matchData)) {
-          setMatches(matchData);
+          // Fetch full game data for recent games to show all 10 participants
+          const recentGameIds = matchData.games.games.slice(0, 20).map(g => g.gameId);
+          const fullResults = await Promise.all(
+            recentGameIds.map((gameId) =>
+              window.electronAPI.getGameById(gameId).catch(() => ({ error: 'fetch failed' }))
+            )
+          );
+          const enrichedGames = matchData.games.games.map((game, i) => {
+            const full = i < 20 ? fullResults[i] : null;
+            if (full && !('error' in full)) return full;
+            return game;
+          });
+          setMatches({
+            ...matchData,
+            games: { ...matchData.games, games: enrichedGames },
+          });
+        }
+
+        // Fetch ranked stats after getting summoner PUUID
+        if (!('error' in summonerData)) {
+          const rankedData = await window.electronAPI.getRankedStats(summonerData.puuid);
+          if (rankedData && !('error' in rankedData)) {
+            setRankedStats(rankedData);
+          }
         }
       })
       .catch((err) => {
@@ -102,6 +126,7 @@ export function ProfileTab() {
       kdaStats={kdaStats}
       championUsage={championUsage}
       recentGames={recentGames}
+      rankedStats={rankedStats}
     />
   );
 }

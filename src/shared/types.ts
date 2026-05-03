@@ -435,6 +435,107 @@ export interface Team {
 }
 
 // ============================================================
+// 排位数据（LCU API: /lol-ranked/v1/ranked-stats/{puuid}）
+// ============================================================
+
+export interface RankedWarning {
+  /** 距离衰减剩余天数 */
+  daysUntilDecay: number;
+  /** 降级警告（0=无, 1=黄牌, 2=红牌） */
+  demotionWarning: number;
+  /** 是否显示衰减警告 */
+  displayDecayWarning: boolean;
+  /** 距离不活跃状态变化剩余时间（毫秒） */
+  timeUntilInactivityStatusChanges: number;
+}
+
+/** 排位信息 */
+export interface RankedEntry {
+  /** 是否显示攀升指示器 */
+  climbingIndicatorActive: boolean;
+  /** 当前赛季奖励所需胜场数 */
+  currentSeasonWinsForRewards: number;
+  /** 段位（I/II/III/IV） */
+  division: string;
+  /** 历史最高段位 */
+  highestDivision: string;
+  /** 历史最高梯队 */
+  highestTier: string;
+  /** 是否为定级赛 */
+  isProvisional: boolean;
+  /** 胜点 */
+  leaguePoints: number;
+  /** 负场数 */
+  losses: number;
+  /** 晋级赛进度（如 "LWW"） */
+  miniSeriesProgress: string;
+  /** 上赛季结束时段位 */
+  previousSeasonEndDivision: string;
+  /** 上赛季结束时梯队 */
+  previousSeasonEndTier: string;
+  /** 上赛季最高段位 */
+  previousSeasonHighestDivision: string;
+  /** 上赛季最高梯队 */
+  previousSeasonHighestTier: string;
+  /** 上赛季奖励胜场数 */
+  previousSeasonWinsForRewards: number;
+  /** 定级赛总场次 */
+  provisionalGameThreshold: number;
+  /** 定级赛剩余场次 */
+  provisionalGamesRemaining: number;
+  /** 队列类型（如 RANKED_SOLO_5x5） */
+  queueType: string;
+  /** 弹性排位评分 */
+  ratedRating: number;
+  /** 弹性排位梯队 */
+  ratedTier: string;
+  /** 当前梯队（如 DIAMOND） */
+  tier: string;
+  /** 衰减/降级警告信息 */
+  warnings: RankedWarning | null;
+  /** 胜场数 */
+  wins: number;
+}
+
+export interface RankedSeason {
+  /** 当前赛季结束时间戳（毫秒） */
+  currentSeasonEnd: number;
+  /** 当前赛季 ID */
+  currentSeasonId: number;
+  /** 下赛季开始时间戳（毫秒） */
+  nextSeasonStart: number;
+}
+
+export interface RankedStats {
+  /** 当前赛季分段点数 */
+  currentSeasonSplitPoints: number;
+  /** 已获得的王权奖励 ID 列表 */
+  earnedRegaliaRewardIds: string[];
+  /** 当前赛季达到的最高梯队（峡谷之巅） */
+  highestCurrentSeasonReachedTierSR: string;
+  /** 上赛季结束最高段位 */
+  highestPreviousSeasonEndDivision: string;
+  /** 上赛季结束最高梯队 */
+  highestPreviousSeasonEndTier: string;
+  /** 最高排位记录（任意队列） */
+  highestRankedEntry: RankedEntry;
+  /** 最高排位记录（峡谷之巅） */
+  highestRankedEntrySR: RankedEntry;
+  /** 上赛季分段点数 */
+  previousSeasonSplitPoints: number;
+  /** 各队列排位记录，key 为 queueType */
+  queueMap: Record<string, RankedEntry>;
+  /** 所有队列排位记录 */
+  queues: RankedEntry[];
+  /** 排位王权等级 */
+  rankedRegaliaLevel: number;
+  /** 各赛季信息，key 为赛季 ID */
+  seasons: Record<string, RankedSeason>;
+  /** 各分段进度 */
+  splitsProgress: Record<string, unknown>;
+}
+
+// ============================================================
 // 登录 Token Payload（JWT idToken 解析结果）
 // ============================================================
 

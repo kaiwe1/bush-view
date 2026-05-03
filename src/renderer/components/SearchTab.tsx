@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Loader2, Search, ArrowLeft } from 'lucide-react';
-import type { SummonerInfo, MatchInfo, Game } from '../../shared/types';
+import type { SummonerInfo, MatchInfo, Game, RankedStats } from '../../shared/types';
 import { calculateKDA, getChampionUsage, parseRiotId } from '../utils';
 import type { KdaStats, ChampionUsage } from '../utils';
 import { MatchResults } from './MatchResults';
@@ -14,6 +14,7 @@ export function SearchTab() {
   const [summoner, setSummoner] = useState<SummonerInfo | null>(null);
   const [platformId, setPlatformId] = useState<string | null>(null);
   const [matches, setMatches] = useState<MatchInfo | null>(null);
+  const [rankedStats, setRankedStats] = useState<RankedStats | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleSearch = async () => {
@@ -24,6 +25,7 @@ export function SearchTab() {
     }
     setSearchLoading(true);
     setError(null);
+
     try {
       const aliasData = await window.electronAPI.lookupAlias(riotId.gameName, riotId.tagLine);
       if ('error' in aliasData) {
@@ -32,17 +34,36 @@ export function SearchTab() {
         return;
       }
 
-      const [summonerData, matchData] = await Promise.all([
+      const [summonerData, matchData, rankedData] = await Promise.all([
         window.electronAPI.getSummonerByPuuid(aliasData.puuid),
         window.electronAPI.getMatchHistoryByPuuid(aliasData.puuid),
+        window.electronAPI.getRankedStats(aliasData.puuid),
       ]);
 
       if (!('error' in summonerData)) {
         setSummoner(summonerData);
       }
       if (matchData && !('error' in matchData)) {
-        setMatches(matchData);
+        // Fetch full game data for recent games to show all 10 participants
+        const recentGameIds = matchData.games.games.slice(0, 20).map(g => g.gameId);
+        const fullResults = await Promise.all(
+          recentGameIds.map((gameId) =>
+            window.electronAPI.getGameById(gameId).catch(() => ({ error: 'fetch failed' }))
+          )
+        );
+        const enrichedGames = matchData.games.games.map((game, i) => {
+          const full = i < 20 ? fullResults[i] : null;
+          if (full && !('error' in full)) return full;
+          return game;
+        });
+        setMatches({
+          ...matchData,
+          games: { ...matchData.games, games: enrichedGames },
+        });
         setPlatformId(matchData.platformId);
+      }
+      if (rankedData && !('error' in rankedData)) {
+        setRankedStats(rankedData);
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : '搜索失败');
@@ -53,6 +74,7 @@ export function SearchTab() {
   const handleClear = () => {
     setSummoner(null);
     setMatches(null);
+    setRankedStats(null);
     setPlatformId(null);
     setError(null);
     setSearchName('');
@@ -87,6 +109,7 @@ export function SearchTab() {
           kdaStats={kdaStats}
           championUsage={championUsage}
           recentGames={recentGames}
+          rankedStats={rankedStats}
         />
       </div>
     );
