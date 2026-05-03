@@ -198,8 +198,7 @@ const QUEUE_NAMES: Record<string, string> = {
   RANKED_SOLO_5x5: '单双排',
   RANKED_FLEX_SR: '灵活排位',
   RANKED_TFT: '云顶之弈',
-  RANKED_TFT_DOUBLE_UP: '云顶双人',
-  RANKED_TFT_TURBO: '云顶狂暴',
+  RANKED_TFT_DOUBLE_UP: '双人云顶',
 };
 
 const ROMAN: Record<string, string> = {
@@ -232,7 +231,216 @@ export function getPlatformIdFromToken(idToken: string): string | null {
 // ============================================================
 
 export function getChampionIconUrl(championId: number): string {
-  return `https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${championId}.png`;
+  return `${CDRAGON_BASE}/v1/champion-icons/${championId}.png`;
+}
+
+// ============================================================
+// 召唤师技能图标
+// ============================================================
+
+const SPELL_ICONS_BASE = `${CDRAGON_BASE}/data/spells/icons2d`;
+
+let spellIconMap: Map<number, string> | null = null;
+let spellIconLoadPromise: Promise<void> | null = null;
+
+export async function preloadSummonerSpellIcons(): Promise<void> {
+  if (spellIconMap) return;
+  if (spellIconLoadPromise) {
+    await spellIconLoadPromise;
+    return;
+  }
+
+  spellIconLoadPromise = (async () => {
+    try {
+      const res = await fetch(`${CDRAGON_BASE}/v1/summoner-spells.json`);
+      const spells: Array<{ id: number; iconPath: string }> = await res.json();
+      const map = new Map<number, string>();
+      for (const spell of spells) {
+        if (spell.id && spell.iconPath) {
+          const filename = spell.iconPath.split('/').pop()?.toLowerCase();
+          if (filename) {
+            map.set(spell.id, `${SPELL_ICONS_BASE}/${filename}`);
+          }
+        }
+      }
+      spellIconMap = map;
+    } catch {
+      spellIconMap = new Map();
+    }
+  })();
+
+  await spellIconLoadPromise;
+}
+
+export function getSummonerSpellIconUrl(spellId: number): string | null {
+  if (spellId === 0) return null;
+  if (!spellIconMap) {
+    preloadSummonerSpellIcons();
+    // fallback: try the v1 API while the map loads
+    return `${CDRAGON_BASE}/v1/spell-icons/${spellId}.png`;
+  }
+  return spellIconMap.get(spellId) ?? null;
+}
+
+// ============================================================
+// 装备图标
+// ============================================================
+
+const ITEM_ICONS_BASE = 'https://raw.communitydragon.org/latest/game/assets/items/icons2d';
+
+let itemIconMap: Map<number, string> | null = null;
+let itemIconLoadPromise: Promise<void> | null = null;
+
+export async function preloadItemIcons(): Promise<void> {
+  if (itemIconMap) return;
+  if (itemIconLoadPromise) {
+    await itemIconLoadPromise;
+    return;
+  }
+
+  itemIconLoadPromise = (async () => {
+    try {
+      const res = await fetch(`${CDRAGON_BASE}/v1/items.json`);
+      const items: Array<{ id: number; iconPath: string }> = await res.json();
+      const map = new Map<number, string>();
+      for (const item of items) {
+        if (item.id && item.iconPath) {
+          const filename = item.iconPath.split('/').pop()?.toLowerCase();
+          if (filename) {
+            map.set(item.id, `${ITEM_ICONS_BASE}/${filename}`);
+          }
+        }
+      }
+      itemIconMap = map;
+    } catch {
+      itemIconMap = new Map(); // empty map signals load was attempted
+    }
+  })();
+
+  await itemIconLoadPromise;
+}
+
+export function getItemIconUrl(itemId: number): string | null {
+  if (itemId === 0) return null;
+  // start loading on first call, but return fallback URL synchronously
+  if (!itemIconMap) {
+    preloadItemIcons();
+    return `${CDRAGON_BASE}/v1/items/${itemId}.png`;
+  }
+  return itemIconMap.get(itemId) ?? null;
+}
+
+// ============================================================
+// 符文图标（ID数据来源: https://darkintaqt.com/blog/perk-ids）
+// ============================================================
+
+// 符文 ID → URL 路径段（dirname/filename，全小写）
+const PERK_PATHS: [number, string][] = [
+  // Precision (8000)
+  [8000, 'precision/precision'],
+  [8005, 'presstheattack/presstheattack'],
+  [8008, 'lethaltempo/lethaltempotemp'],
+  [8021, 'fleetfootwork/fleetfootwork'],
+  [8010, 'conqueror/conqueror'],
+  [9101, 'absorblife/absorblife'],
+  [9111, 'triumph/triumph'],
+  [8009, 'presenceofmind/presenceofmind'],
+  [9104, 'legendalacrity/legendalacrity'],
+  [9105, 'legendhaste/legendhaste'],
+  [9103, 'legendbloodline/legendbloodline'],
+  [8014, 'coupdegrace/coupdegrace'],
+  [8017, 'cutdown/cutdown'],
+  [8299, 'laststand/laststand'],
+  // Domination (8100)
+  [8100, 'domination/domination'],
+  [8112, 'electrocute/electrocute'],
+  [8128, 'darkharvest/darkharvest'],
+  [9923, 'hailofblades/hailofblades'],
+  [8126, 'cheapshot/cheapshot'],
+  [8139, 'tasteofblood/tasteofblood'],
+  [8143, 'suddenimpact/suddenimpact'],
+  [8137, 'sixthsense/sixthsense'],
+  [8140, 'grislymementos/grislymementos'],
+  [8141, 'deepward/deepward'],
+  [8135, 'treasurehunter/treasurehunter'],
+  [8105, 'relentlesshunter/relentlesshunter'],
+  [8106, 'ultimatehunter/ultimatehunter'],
+  // Sorcery (8200)
+  [8200, 'sorcery/sorcery'],
+  [8214, 'summonaery/summonaery'],
+  [8229, 'arcanecomet/arcanecomet'],
+  [8230, 'phaserush/phaserush'],
+  [8224, 'nullifyingorb/nullifyingorb'],
+  [8226, 'manaflowband/manaflowband'],
+  [8275, 'nimbuscloak/nimbuscloak'],
+  [8210, 'transcendence/transcendence'],
+  [8234, 'celerity/celerity'],
+  [8233, 'absolutefocus/absolutefocus'],
+  [8237, 'scorch/scorch'],
+  [8232, 'waterwalking/waterwalking'],
+  [8236, 'gatheringstorm/gatheringstorm'],
+  [8992, 'deathfiretouch/deathfire_touch_keystone'],
+  // Inspiration (8300)
+  [8300, 'inspiration/inspiration'],
+  [8351, 'glacialaugment/glacialaugment'],
+  [8360, 'unsealedspellbook/unsealedspellbook'],
+  [8369, 'firststrike/firststrike'],
+  [8306, 'hextechflashtraption/hextechflashtraption'],
+  [8304, 'magicalfootwear/magicalfootwear'],
+  [8321, 'cashback/cashback'],
+  [8313, 'perfecttiming/perfecttiming'],
+  [8352, 'timewarptonic/timewarptonic'],
+  [8345, 'biscuitdelivery/biscuitdelivery'],
+  [8347, 'cosmicinsight/cosmicinsight'],
+  [8410, 'approachvelocity/approachvelocity'],
+  [8316, 'jackofalltrades/jackofalltrades'],
+  // Resolve (8400)
+  [8400, 'resolve/resolve'],
+  [8437, 'graspoftheundying/graspoftheundying'],
+  [8439, 'aftershock/aftershock'],
+  [8465, 'guardian/guardian'],
+  [8446, 'demolish/demolish'],
+  [8463, 'fontoflife/fontoflife'],
+  [8401, 'shieldbash/shieldbash'],
+  [8429, 'conditioning/conditioning'],
+  [8444, 'secondwind/secondwind'],
+  [8473, 'boneplating/boneplating'],
+  [8451, 'overgrowth/overgrowth'],
+  [8453, 'revitalize/revitalize'],
+  [8242, 'unflinching/unflinching'],
+];
+
+const PERK_PATH_MAP = new Map(PERK_PATHS);
+
+// Style ID → 小写英文名（用于 URL）
+const STYLE_ID_TO_NAME: Record<number, string> = {
+  8000: 'precision',
+  8100: 'domination',
+  8200: 'sorcery',
+  8300: 'inspiration',
+  8400: 'resolve',
+};
+
+// 系别图标文件（game/assets/perks/styles/ 下的独立图片资源）
+const STYLE_ICON_FILE: Record<number, string> = {
+  8000: '7201_precision',
+  8100: '7200_domination',
+  8200: '7202_sorcery',
+  8300: '7203_whimsy',
+  8400: '7204_resolve',
+};
+
+export function getPerkStyleIconUrl(styleId: number): string | null {
+  const filename = STYLE_ICON_FILE[styleId];
+  if (!filename) return null;
+  return `https://raw.communitydragon.org/latest/game/assets/perks/styles/${filename}.png`;
+}
+
+export function getPerkIconUrl(perkId: number, primaryStyleId: number): string | null {
+  const styleName = STYLE_ID_TO_NAME[primaryStyleId];
+  const path = PERK_PATH_MAP.get(perkId);
+  if (!styleName || !path) return null;
+  return `https://raw.communitydragon.org/latest/game/assets/perks/styles/${styleName}/${path}.png`;
 }
 
 // ============================================================

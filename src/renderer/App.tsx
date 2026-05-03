@@ -3,23 +3,16 @@ import { SearchTab } from './components/SearchTab';
 import { ProfileTab } from './components/ProfileTab';
 import { VersionTab } from './components/VersionTab';
 import { Header } from './components/Header';
-import type { RankedStats } from '../shared/types';
+import { preloadItemIcons, preloadSummonerSpellIcons } from './utils';
 
 type Tab = 'search' | 'profile' | 'version';
 
 function App() {
   const [activeTab, setActiveTab] = useState<Tab>('search');
-  const [rankedStats, setRankedStats] = useState<RankedStats | null>(null);
 
   useEffect(() => {
-    window.electronAPI.getCurrentSummoner().then((data) => {
-      if ('error' in data) return;
-      window.electronAPI.getRankedStats(data.puuid).then((ranked) => {
-        if (!('error' in ranked)) {
-          setRankedStats(ranked);
-        }
-      });
-    });
+    preloadItemIcons();
+    preloadSummonerSpellIcons();
   }, []);
 
   return (

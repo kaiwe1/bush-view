@@ -64,6 +64,11 @@ npm run lint
 
 MIT License
 
+## 致谢
+
+- 符文 ID 对照表来自 [darkintaqt.com/blog/perk-ids](https://darkintaqt.com/blog/perk-ids)
+- 游戏资源（装备、技能、英雄图标等）来自 [CommunityDragon](https://raw.communitydragon.org)
+
 ## 作者
 
 kaiwei (me@kaiweizhang.com)

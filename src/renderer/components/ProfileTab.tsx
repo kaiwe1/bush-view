@@ -27,6 +27,7 @@ export function ProfileTab() {
           setError(summonerData.error);
           return;
         }
+        console.log('Summoner Data:', summonerData);
         setSummoner(summonerData);
 
         if ('idToken' in sessionData) {
@@ -47,10 +48,12 @@ export function ProfileTab() {
             if (full && !('error' in full)) return full;
             return game;
           });
-          setMatches({
+          const matches = {
             ...matchData,
             games: { ...matchData.games, games: enrichedGames },
-          });
+          };
+          console.log('Match Data:', matches);
+          setMatches(matches);
         }
 
         // Fetch ranked stats after getting summoner PUUID

@@ -13,6 +13,10 @@ import {
   getProfileIconUrl,
   getPlatformName,
   getChampionIconUrl,
+  getSummonerSpellIconUrl,
+  getItemIconUrl,
+  getPerkStyleIconUrl,
+  getPerkIconUrl,
   getGamePlayers,
   formatDuration,
   formatGameMode,
@@ -94,7 +98,6 @@ export function MatchResults({
             <div className="ml-auto flex items-center gap-3">
               {RANKED_QUEUES.map((queue) => {
                 const entry = rankedStats.queueMap[queue];
-                console.log('Ranked entry for queue', queue, entry, entry.losses);
                 return (
                   <div
                     key={queue}
@@ -256,9 +259,9 @@ export function MatchResults({
                 <TableRow>
                   <TableHead className="w-16">结果</TableHead>
                   <TableHead>模式</TableHead>
+                  <TableHead className="w-[340px]">战绩详情</TableHead>
                   <TableHead className="w-[280px]">玩家</TableHead>
                   <TableHead>时间</TableHead>
-                  <TableHead>K / D / A</TableHead>
                   <TableHead>时长</TableHead>
                   <TableHead className="text-right">版本</TableHead>
                 </TableRow>
@@ -269,6 +272,11 @@ export function MatchResults({
                     ? findPlayerParticipant(game, summoner.puuid)
                     : null;
                   const win = participant?.stats.win;
+                  const stats = participant?.stats;
+                  const primaryStyle = stats?.perkPrimaryStyle ?? 0; // 主系符文 ID
+                  const subStyle = stats?.perkSubStyle ?? 0; // 副系符文 ID
+                  console.log('stats', stats);
+                  console.log('participant', participant);
                   return (
                     <TableRow key={game.gameId}>
                       <TableCell>
@@ -277,6 +285,139 @@ export function MatchResults({
                         </span>
                       </TableCell>
                       <TableCell className="text-sm">{formatGameMode(game)}</TableCell>
+                      <TableCell>
+                        {participant && stats ? (
+                          <div className="flex items-center gap-2">
+                            {/* 英雄头像 */}
+                            <img
+                              src={getChampionIconUrl(participant.championId)}
+                              alt=""
+                              className="w-10 h-10 rounded-full flex-shrink-0"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).style.display = 'none';
+                              }}
+                            />
+                            {/* 召唤师技能 */}
+                            <div className="flex flex-col gap-0.5 flex-shrink-0">
+                              <img
+                                src={getSummonerSpellIconUrl(participant.spell1Id) ?? undefined}
+                                alt=""
+                                className="w-4 h-4 rounded"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                }}
+                              />
+                              <img
+                                src={getSummonerSpellIconUrl(participant.spell2Id) ?? undefined}
+                                alt=""
+                                className="w-4 h-4 rounded"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                }}
+                              />
+                            </div>
+                            {/* 装备 */}
+                            <div className="flex flex-col gap-0.5 flex-shrink-0">
+                              <div className="flex gap-0.5">
+                                {[stats.item0, stats.item1, stats.item2, stats.item3].map((itemId, i) => {
+                                  const url = getItemIconUrl(itemId);
+                                  return (
+                                    <div key={i} className="w-5 h-5 rounded bg-muted flex-shrink-0">
+                                      {url ? (
+                                        <img
+                                          src={url}
+                                          alt=""
+                                          className="w-5 h-5 rounded"
+                                          onError={(e) => {
+                                            (e.target as HTMLImageElement).style.display = 'none';
+                                          }}
+                                        />
+                                      ) : (
+                                        <div className="w-5 h-5 rounded border border-dashed border-muted-foreground/30" />
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                              <div className="flex gap-0.5">
+                                {[stats.item4, stats.item5, stats.item6].map((itemId, i) => {
+                                  const url = getItemIconUrl(itemId);
+                                  return (
+                                    <div key={i} className="w-5 h-5 rounded bg-muted flex-shrink-0">
+                                      {url ? (
+                                        <img
+                                          src={url}
+                                          alt=""
+                                          className="w-5 h-5 rounded"
+                                          onError={(e) => {
+                                            (e.target as HTMLImageElement).style.display = 'none';
+                                          }}
+                                        />
+                                      ) : (
+                                        <div className="w-5 h-5 rounded border border-dashed border-muted-foreground/30" />
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                            {/* 符文 */}
+                            <div className="flex items-center gap-0.5 flex-shrink-0">
+                              {(() => {
+                                if (primaryStyle === 0 || subStyle === 0) return null;
+                                const keystoneUrl = getPerkIconUrl(stats.perk0, primaryStyle);
+                                const primaryUrl = getPerkStyleIconUrl(primaryStyle);
+                                const subUrl = getPerkStyleIconUrl(subStyle);
+                                return (
+                                  <>
+                                    <img
+                                      src={keystoneUrl ?? ''}
+                                      alt=""
+                                      className="w-5 h-5 rounded-full bg-muted"
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).style.display = 'none';
+                                      }}
+                                    />
+                                    <img
+                                      src={primaryUrl ?? ''}
+                                      alt=""
+                                      className="w-4 h-4 rounded-full bg-muted"
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).style.display = 'none';
+                                      }}
+                                    />
+                                    <img
+                                      src={subUrl ?? ''}
+                                      alt=""
+                                      className="w-4 h-4 rounded-full bg-muted"
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).style.display = 'none';
+                                      }}
+                                    />
+                                  </>
+                                );
+                              })()}
+                            </div>
+                            {/* KDA */}
+                            <div className="font-mono text-xs tabular-nums text-center flex-shrink-0 ml-1 leading-tight">
+                              <div>
+                                <span className="font-semibold">{stats.kills}</span>
+                                <span className="text-muted-foreground"> / </span>
+                                <span className="text-red-500 font-semibold">{stats.deaths}</span>
+                                <span className="text-muted-foreground"> / </span>
+                                <span className="font-semibold">{stats.assists}</span>
+                              </div>
+                              <div className="text-muted-foreground text-[10px]">
+                                {stats.deaths === 0
+                                  ? 'Perfect'
+                                  : ((stats.kills + stats.assists) / stats.deaths).toFixed(1)} KDA
+                              </div>
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">-</span>
+                        )}
+                      </TableCell>
                       <TableCell>
                         {(() => {
                           const players = getGamePlayers(game);
@@ -319,21 +460,6 @@ export function MatchResults({
                               minute: '2-digit',
                             })
                           : '-'}
-                      </TableCell>
-                      <TableCell className="font-mono text-sm tabular-nums">
-                        {participant ? (
-                          <>
-                            <span>{participant.stats.kills}</span>
-                            <span className="text-muted-foreground"> / </span>
-                            <span className="text-red-500">
-                              {participant.stats.deaths}
-                            </span>
-                            <span className="text-muted-foreground"> / </span>
-                            <span>{participant.stats.assists}</span>
-                          </>
-                        ) : (
-                          '-'
-                        )}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
                         {formatDuration(game.gameDuration)}
