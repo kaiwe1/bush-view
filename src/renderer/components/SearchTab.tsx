@@ -1,0 +1,124 @@
+import { useState, useMemo } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Loader2, Search, ArrowLeft } from 'lucide-react';
+import type { SummonerInfo, MatchInfo, Game } from '../../shared/types';
+import { calculateKDA, getChampionUsage, parseRiotId } from '../utils';
+import type { KdaStats, ChampionUsage } from '../utils';
+import { MatchResults } from './MatchResults';
+
+export function SearchTab() {
+  const [searchName, setSearchName] = useState('');
+  const [searchLoading, setSearchLoading] = useState(false);
+  const [summoner, setSummoner] = useState<SummonerInfo | null>(null);
+  const [platformId, setPlatformId] = useState<string | null>(null);
+  const [matches, setMatches] = useState<MatchInfo | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSearch = async () => {
+    const riotId = parseRiotId(searchName);
+    if (!riotId) {
+      setError('请输入正确的 Riot ID 格式（如 游戏ID#000）');
+      return;
+    }
+    setSearchLoading(true);
+    setError(null);
+    try {
+      const aliasData = await window.electronAPI.lookupAlias(riotId.gameName, riotId.tagLine);
+      if ('error' in aliasData) {
+        setError(aliasData.error);
+        setSearchLoading(false);
+        return;
+      }
+
+      const [summonerData, matchData] = await Promise.all([
+        window.electronAPI.getSummonerByPuuid(aliasData.puuid),
+        window.electronAPI.getMatchHistoryByPuuid(aliasData.puuid),
+      ]);
+
+      if (!('error' in summonerData)) {
+        setSummoner(summonerData);
+      }
+      if (matchData && !('error' in matchData)) {
+        setMatches(matchData);
+        setPlatformId(matchData.platformId);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : '搜索失败');
+    }
+    setSearchLoading(false);
+  };
+
+  const handleClear = () => {
+    setSummoner(null);
+    setMatches(null);
+    setPlatformId(null);
+    setError(null);
+    setSearchName('');
+  };
+
+  const kdaStats = useMemo(() => {
+    if (!matches?.games?.games || !summoner?.puuid) return null;
+    return calculateKDA(matches.games.games, summoner.puuid);
+  }, [matches, summoner]);
+
+  const championUsage = useMemo(() => {
+    if (!matches?.games?.games || !summoner?.puuid) return [];
+    return getChampionUsage(matches.games.games, summoner.puuid);
+  }, [matches, summoner]);
+
+  const recentGames = useMemo(() => {
+    if (!matches?.games?.games) return [];
+    return matches.games.games.slice(0, 20);
+  }, [matches]);
+
+  if (summoner) {
+    return (
+      <div className="space-y-4">
+        <Button variant="ghost" size="sm" onClick={handleClear}>
+          <ArrowLeft className="w-4 h-4 mr-1.5" />
+          返回搜索
+        </Button>
+        <MatchResults
+          summoner={summoner}
+          platformId={platformId}
+          matches={matches}
+          kdaStats={kdaStats}
+          championUsage={championUsage}
+          recentGames={recentGames}
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {error && (
+        <div className="bg-destructive/10 text-destructive px-4 py-3 rounded-md text-sm">
+          {error}
+        </div>
+      )}
+      <Card>
+        <CardHeader>
+          <CardTitle>召唤师查询</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex gap-2">
+            <Input
+              value={searchName}
+              onChange={(e) => setSearchName(e.target.value)}
+              placeholder="输入召唤师名称（如 游戏ID#000）"
+              className="max-w-sm"
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+            />
+            <Button onClick={handleSearch} disabled={searchLoading}>
+              {searchLoading ? <Loader2 className="animate-spin w-4 h-4" /> : <Search className="w-4 h-4" />}
+              <span className="ml-1.5">搜索</span>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}

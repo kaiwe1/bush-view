@@ -1,6 +1,6 @@
 import https from 'https';
 import { execSync } from 'child_process';
-import type { SummonerInfo, MatchInfo, LoginSession } from '../../shared/types';
+import type { SummonerInfo, MatchInfo, LoginSession, AliasLookup } from '../../shared/types';
 
 interface LCUCredentials {
   port: number;
@@ -83,4 +83,18 @@ export async function getLoginSession(): Promise<LoginSession> {
 
 export async function getMatchHistory(): Promise<MatchInfo> {
   return await makeLCURequest('/lol-match-history/v1/products/lol/current-summoner/matches') as Promise<MatchInfo>;
+}
+
+export async function lookupAlias(gameName: string, tagLine: string): Promise<AliasLookup> {
+  const encodedName = encodeURIComponent(gameName);
+  const encodedTag = encodeURIComponent(tagLine);
+  return await makeLCURequest(`/lol-summoner/v1/alias/lookup?gameName=${encodedName}&tagLine=${encodedTag}`) as Promise<AliasLookup>;
+}
+
+export async function getSummonerByPuuid(puuid: string): Promise<SummonerInfo> {
+  return await makeLCURequest(`/lol-summoner/v2/summoners/puuid/${puuid}`) as Promise<SummonerInfo>;
+}
+
+export async function getMatchHistoryByPuuid(puuid: string): Promise<MatchInfo> {
+  return await makeLCURequest(`/lol-match-history/v1/products/lol/${puuid}/matches`) as Promise<MatchInfo>;
 }

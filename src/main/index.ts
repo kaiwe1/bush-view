@@ -1,7 +1,7 @@
 import { app, BrowserWindow, ipcMain } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
-import { getCurrentSummoner, getMatchHistory, getLoginSession } from './api/lcu';
+import { getCurrentSummoner, getMatchHistory, getLoginSession, lookupAlias, getSummonerByPuuid, getMatchHistoryByPuuid } from './api/lcu';
 
 // IPC handlers
 ipcMain.handle('get-current-summoner', async () => {
@@ -29,6 +29,39 @@ ipcMain.handle('get-match-history', async () => {
 ipcMain.handle('get-login-session', async () => {
   try {
     return await getLoginSession();
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return { error: error.message };
+    }
+    return { error: 'An unknown error occurred' };
+  }
+});
+
+ipcMain.handle('lookup-alias', async (_event, gameName: string, tagLine: string) => {
+  try {
+    return await lookupAlias(gameName, tagLine);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return { error: error.message };
+    }
+    return { error: 'An unknown error occurred' };
+  }
+});
+
+ipcMain.handle('get-summoner-by-puuid', async (_event, puuid: string) => {
+  try {
+    return await getSummonerByPuuid(puuid);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return { error: error.message };
+    }
+    return { error: 'An unknown error occurred' };
+  }
+});
+
+ipcMain.handle('get-match-history-by-puuid', async (_event, puuid: string) => {
+  try {
+    return await getMatchHistoryByPuuid(puuid);
   } catch (error: unknown) {
     if (error instanceof Error) {
       return { error: error.message };
