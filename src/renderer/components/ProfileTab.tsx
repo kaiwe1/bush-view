@@ -2,8 +2,8 @@ import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, User } from 'lucide-react';
 import type { SummonerInfo, MatchInfo, Game, RankedStats } from '../../shared/types';
-import { getPlatformIdFromToken, calculateKDA, getChampionUsage } from '../utils';
-import type { KdaStats, ChampionUsage } from '../utils';
+import { getPlatformIdFromToken, calculateKDA, calculateRadarStats, getChampionUsage } from '../utils';
+import type { KdaStats, RadarStats, ChampionUsage } from '../utils';
 import { MatchResults } from './MatchResults';
 
 export function ProfileTab() {
@@ -77,6 +77,11 @@ export function ProfileTab() {
     return calculateKDA(matches.games.games, summoner.puuid);
   }, [matches, summoner]);
 
+  const radarStats = useMemo(() => {
+    if (!matches?.games?.games || !summoner?.puuid) return null;
+    return calculateRadarStats(matches.games.games, summoner.puuid);
+  }, [matches, summoner]);
+
   const championUsage = useMemo(() => {
     if (!matches?.games?.games || !summoner?.puuid) return [];
     return getChampionUsage(matches.games.games, summoner.puuid);
@@ -127,6 +132,7 @@ export function ProfileTab() {
       platformId={platformId}
       matches={matches}
       kdaStats={kdaStats}
+      radarStats={radarStats}
       championUsage={championUsage}
       recentGames={recentGames}
       rankedStats={rankedStats}

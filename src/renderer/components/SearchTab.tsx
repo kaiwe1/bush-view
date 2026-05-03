@@ -4,8 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Loader2, Search, ArrowLeft } from 'lucide-react';
 import type { SummonerInfo, MatchInfo, Game, RankedStats } from '../../shared/types';
-import { calculateKDA, getChampionUsage, parseRiotId } from '../utils';
-import type { KdaStats, ChampionUsage } from '../utils';
+import { calculateKDA, calculateRadarStats, getChampionUsage, parseRiotId } from '../utils';
+import type { KdaStats, RadarStats, ChampionUsage } from '../utils';
 import { MatchResults } from './MatchResults';
 
 export function SearchTab() {
@@ -85,6 +85,11 @@ export function SearchTab() {
     return calculateKDA(matches.games.games, summoner.puuid);
   }, [matches, summoner]);
 
+  const radarStats = useMemo(() => {
+    if (!matches?.games?.games || !summoner?.puuid) return null;
+    return calculateRadarStats(matches.games.games, summoner.puuid);
+  }, [matches, summoner]);
+
   const championUsage = useMemo(() => {
     if (!matches?.games?.games || !summoner?.puuid) return [];
     return getChampionUsage(matches.games.games, summoner.puuid);
@@ -107,6 +112,7 @@ export function SearchTab() {
           platformId={platformId}
           matches={matches}
           kdaStats={kdaStats}
+          radarStats={radarStats}
           championUsage={championUsage}
           recentGames={recentGames}
           rankedStats={rankedStats}

@@ -26,8 +26,10 @@ import {
   getRankEmblemUrl,
   type KdaStats,
   type ChampionUsage,
+  type RadarStats,
   type GamePlayer,
 } from '../utils';
+import { RadarChart } from './RadarChart';
 
 const RANKED_QUEUES = ['RANKED_SOLO_5x5', 'RANKED_FLEX_SR'] as const;
 
@@ -37,6 +39,7 @@ interface MatchResultsProps {
   platformId: string | null;
   matches: MatchInfo | null;
   kdaStats: KdaStats | null;
+  radarStats: RadarStats | null;
   championUsage: ChampionUsage[];
   recentGames: Game[];
   rankedStats: RankedStats | null;
@@ -47,6 +50,7 @@ export function MatchResults({
   platformId,
   matches,
   kdaStats,
+  radarStats,
   championUsage,
   recentGames,
   rankedStats,
@@ -155,55 +159,65 @@ export function MatchResults({
         </CardContent>
       </Card>
 
-      {/* KDA */}
+      {/* KDA + 六边形雷达图 */}
       {kdaStats && (
         <Card>
           <CardHeader>
             <CardTitle>近期 KDA</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex items-center gap-8">
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground">击杀</p>
-                <p className="text-xl font-bold tabular-nums">{kdaStats.kills}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground">死亡</p>
-                <p className="text-xl font-bold text-red-500 tabular-nums">
-                  {kdaStats.deaths}
-                </p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground">助攻</p>
-                <p className="text-xl font-bold tabular-nums">{kdaStats.assists}</p>
-              </div>
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground">KDA</p>
-                <p
-                  className={`text-2xl font-bold tabular-nums ${parseFloat(kdaStats.kda) >= 3
-                      ? 'text-green-500'
-                      : parseFloat(kdaStats.kda) >= 2
-                        ? 'text-amber-500'
-                        : 'text-red-500'
+            <div className="flex items-center gap-6 flex-wrap">
+              {/* 左侧：数字统计 */}
+              <div className="flex items-center gap-6">
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground">击杀</p>
+                  <p className="text-xl font-bold tabular-nums">{kdaStats.kills}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground">死亡</p>
+                  <p className="text-xl font-bold text-red-500 tabular-nums">
+                    {kdaStats.deaths}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground">助攻</p>
+                  <p className="text-xl font-bold tabular-nums">{kdaStats.assists}</p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground">KDA</p>
+                  <p
+                    className={`text-2xl font-bold tabular-nums ${parseFloat(kdaStats.kda) >= 3
+                        ? 'text-green-500'
+                        : parseFloat(kdaStats.kda) >= 2
+                          ? 'text-amber-500'
+                          : 'text-red-500'
+                      }`}
+                  >
+                    {kdaStats.kda}
+                  </p>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs text-muted-foreground">胜率</p>
+                  <p
+                    className={`text-2xl font-bold tabular-nums ${
+                      parseInt(kdaStats.winRate) >= 60
+                        ? 'text-green-500'
+                        : parseInt(kdaStats.winRate) >= 45
+                          ? 'text-amber-500'
+                          : 'text-red-500'
                     }`}
-                >
-                  {kdaStats.kda}
-                </p>
+                  >
+                    {kdaStats.winRate}%
+                  </p>
+                </div>
               </div>
-              <div className="text-center">
-                <p className="text-xs text-muted-foreground">胜率</p>
-                <p
-                  className={`text-2xl font-bold tabular-nums ${
-                    parseInt(kdaStats.winRate) >= 60
-                      ? 'text-green-500'
-                      : parseInt(kdaStats.winRate) >= 45
-                        ? 'text-amber-500'
-                        : 'text-red-500'
-                  }`}
-                >
-                  {kdaStats.winRate}%
-                </p>
-              </div>
+
+              {/* 右侧：六边形雷达图 */}
+              {radarStats && (
+                <div className="ml-auto flex-shrink-0">
+                  <RadarChart stats={radarStats} size={240} />
+                </div>
+              )}
             </div>
             <p className="text-xs text-muted-foreground mt-3">
               统计范围：最近 {matches?.games?.gameCount ?? kdaStats.games} 场

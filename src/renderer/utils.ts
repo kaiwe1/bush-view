@@ -90,6 +90,81 @@ export interface KdaStats {
   winRate: string;
 }
 
+// ============================================================
+// 六边形雷达图统计（近期对局平均值）
+// ============================================================
+
+export interface RadarStats {
+  kda: number;
+  dpm: number;        // 对英雄伤害/分钟
+  gpm: number;        // 获得金币/分钟
+  vspm: number;       // 视野得分/分钟
+  kp: number;         // 参团率 %
+  dtpm: number;       // 承受伤害/分钟
+}
+
+/** 雷达图各维度的归一化上限 */
+export const RADAR_CAPS: Record<keyof RadarStats, number> = {
+  kda: 6,
+  dpm: 1000,
+  gpm: 500,
+  vspm: 2.5,
+  kp: 100,
+  dtpm: 1500,
+};
+
+export function calculateRadarStats(games: Game[], puuid: string): RadarStats | null {
+  let totalKills = 0;
+  let totalDeaths = 0;
+  let totalAssists = 0;
+  let totalDamage = 0;
+  let totalGold = 0;
+  let totalVision = 0;
+  let totalTeamKills = 0;
+  let totalDamageTaken = 0;
+  let totalDuration = 0;
+  let gameCount = 0;
+
+  for (const game of games) {
+    const p = findPlayerParticipant(game, puuid);
+    if (!p) continue;
+
+    const durationMin = game.gameDuration / 60;
+
+    totalKills += p.stats.kills;
+    totalDeaths += p.stats.deaths;
+    totalAssists += p.stats.assists;
+    totalDamage += p.stats.totalDamageDealtToChampions;
+    totalGold += p.stats.goldEarned;
+    totalVision += p.stats.visionScore;
+    totalDamageTaken += p.stats.totalDamageTaken;
+    totalDuration += durationMin;
+
+    // 队伍总击杀（用于参团率）
+    const teamKills = game.participants
+      .filter((pp) => pp.teamId === p.teamId)
+      .reduce((sum, pp) => sum + pp.stats.kills, 0);
+    totalTeamKills += teamKills;
+
+    gameCount++;
+  }
+
+  if (gameCount === 0) return null;
+
+  const kda = totalDeaths === 0
+    ? totalKills + totalAssists
+    : (totalKills + totalAssists) / totalDeaths;
+
+  return {
+    kda,
+    dpm: totalDamage / totalDuration,
+    gpm: totalGold / totalDuration,
+    vspm: totalVision / totalDuration,
+    kp: totalTeamKills === 0 ? 0 : ((totalKills + totalAssists) / totalTeamKills) * 100,
+    dtpm: totalDamageTaken / totalDuration,
+  };
+}
+
 export function calculateKDA(games: Game[], puuid: string): KdaStats {
   let kills = 0;
   let deaths = 0;
