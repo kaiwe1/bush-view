@@ -37,5 +37,5 @@ jobs:
         with:
           name: BushView-Windows-Build
           path: |
-            out/bush-view-win32-x64/    # package 命令生成的绿色版文件夹
-            out/make/squirrel.windows/x64/*.exe  # make 命令生成的安装程序
+            out/bush-view-win32-x64/
+            out/make/squirrel.windows/x64/*.exe
