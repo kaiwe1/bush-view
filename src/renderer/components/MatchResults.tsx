@@ -24,6 +24,8 @@ import {
   formatTierDivision,
   formatQueueType,
   getRankEmblemUrl,
+  useItemIconsLoaded,
+  useSpellIconsLoaded,
   type KdaStats,
   type ChampionUsage,
   type RadarStats,
@@ -55,6 +57,9 @@ export function MatchResults({
   recentGames,
   rankedStats,
 }: MatchResultsProps) {
+  useItemIconsLoaded();
+  useSpellIconsLoaded();
+
   return (
     <div className="space-y-6">
       {/* Summoner Card */}
@@ -289,8 +294,6 @@ export function MatchResults({
                   const stats = participant?.stats;
                   const primaryStyle = stats?.perkPrimaryStyle ?? 0; // 主系符文 ID
                   const subStyle = stats?.perkSubStyle ?? 0; // 副系符文 ID
-                  console.log('stats', stats);
-                  console.log('participant', participant);
                   return (
                     <TableRow key={game.gameId}>
                       <TableCell>

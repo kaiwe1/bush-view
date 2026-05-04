@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { PLATFORM_TENCENT } from '../shared/platforms';
 import type { LoginTokenPayload, Game, Participant } from '../shared/types';
 
@@ -314,101 +315,102 @@ export function getChampionIconUrl(championId: number): string {
   return cachedUrl(`${CDRAGON_BASE}/v1/champion-icons/${championId}.png`);
 }
 
+
+// ============================================================
+// 通用图标懒加载工厂
+// ============================================================
+
+interface IconEntry {
+  id: number;
+  iconPath: string;
+}
+
+interface IconRegistry {
+  preload: () => Promise<void>;
+  getUrl: (id: number) => string | null;
+  useLoaded: () => boolean;
+}
+
+function createIconRegistry(
+  configUrl: string,
+  iconsBase: string,
+): IconRegistry {
+  let iconMap: Map<number, string> | null = null;
+  let loadPromise: Promise<void> | null = null;
+  const listeners = new Set<() => void>();
+
+  const preload = async (): Promise<void> => {
+    if (iconMap) return;
+    if (loadPromise) { await loadPromise; return; }
+
+    loadPromise = (async () => {
+      try {
+        // 先获取配置列表（ID → 图标路径），再构造 ID → URL 的映射
+        const res = await fetch(configUrl);
+        const entries: IconEntry[] = await res.json();
+        const map = new Map<number, string>();
+        for (const { id, iconPath } of entries) {
+          if (id && iconPath) {
+            const filename = iconPath.split('/').pop()?.toLowerCase();
+            if (filename) map.set(id, cachedUrl(`${iconsBase}/${filename}`));
+          }
+        }
+        iconMap = map;
+      } catch {
+        iconMap = new Map();
+      } finally {
+        listeners.forEach((cb) => cb()); // 通知图标已加载完成
+      }
+    })();
+
+    await loadPromise;
+  };
+
+  const getUrl = (id: number): string | null => {
+    if (id === 0) return null;
+    if (!iconMap) { preload(); return null; }
+    return iconMap.get(id) ?? null;
+  };
+
+  const useLoaded = (): boolean => {
+    const [, forceUpdate] = useState(0);
+    useEffect(() => {
+      if (iconMap) return;
+      const listener = () => forceUpdate((v) => v + 1);
+      listeners.add(listener);
+      return () => { listeners.delete(listener); };
+    }, []);
+    return iconMap !== null;
+  };
+
+  return { preload, getUrl, useLoaded };
+}
+
 // ============================================================
 // 召唤师技能图标
 // ============================================================
 
-const SPELL_ICONS_BASE = `${CDRAGON_BASE}/data/spells/icons2d`;
+const spellRegistry = createIconRegistry(
+  `${CDRAGON_BASE}/v1/summoner-spells.json`,
+  `${CDRAGON_BASE}/data/spells/icons2d`,
+);
 
-let spellIconMap: Map<number, string> | null = null;
-let spellIconLoadPromise: Promise<void> | null = null;
-
-export async function preloadSummonerSpellIcons(): Promise<void> {
-  if (spellIconMap) return;
-  if (spellIconLoadPromise) {
-    await spellIconLoadPromise;
-    return;
-  }
-
-  spellIconLoadPromise = (async () => {
-    try {
-      const res = await fetch(`${CDRAGON_BASE}/v1/summoner-spells.json`);
-      const spells: Array<{ id: number; iconPath: string }> = await res.json();
-      const map = new Map<number, string>();
-      for (const spell of spells) {
-        if (spell.id && spell.iconPath) {
-          const filename = spell.iconPath.split('/').pop()?.toLowerCase();
-          if (filename) {
-            map.set(spell.id, cachedUrl(`${SPELL_ICONS_BASE}/${filename}`));
-          }
-        }
-      }
-      spellIconMap = map;
-    } catch {
-      spellIconMap = new Map();
-    }
-  })();
-
-  await spellIconLoadPromise;
-}
-
-export function getSummonerSpellIconUrl(spellId: number): string | null {
-  if (spellId === 0) return null;
-  if (!spellIconMap) {
-    preloadSummonerSpellIcons();
-    // fallback: try the v1 API while the map loads
-    return cachedUrl(`${CDRAGON_BASE}/v1/spell-icons/${spellId}.png`);
-  }
-  return spellIconMap.get(spellId) ?? null;
-}
+export const preloadSummonerSpellIcons = spellRegistry.preload;
+export const getSummonerSpellIconUrl    = spellRegistry.getUrl;
+export const useSpellIconsLoaded        = spellRegistry.useLoaded;
 
 // ============================================================
 // 装备图标
 // ============================================================
 
-const ITEM_ICONS_BASE = 'https://raw.communitydragon.org/latest/game/assets/items/icons2d';
+const itemRegistry = createIconRegistry(
+  `${CDRAGON_BASE}/v1/items.json`,
+  'https://raw.communitydragon.org/latest/game/assets/items/icons2d',
+);
 
-let itemIconMap: Map<number, string> | null = null;
-let itemIconLoadPromise: Promise<void> | null = null;
-
-export async function preloadItemIcons(): Promise<void> {
-  if (itemIconMap) return;
-  if (itemIconLoadPromise) {
-    await itemIconLoadPromise;
-    return;
-  }
-
-  itemIconLoadPromise = (async () => {
-    try {
-      const res = await fetch(`${CDRAGON_BASE}/v1/items.json`);
-      const items: Array<{ id: number; iconPath: string }> = await res.json();
-      const map = new Map<number, string>();
-      for (const item of items) {
-        if (item.id && item.iconPath) {
-          const filename = item.iconPath.split('/').pop()?.toLowerCase();
-          if (filename) {
-            map.set(item.id, cachedUrl(`${ITEM_ICONS_BASE}/${filename}`));
-          }
-        }
-      }
-      itemIconMap = map;
-    } catch {
-      itemIconMap = new Map(); // empty map signals load was attempted
-    }
-  })();
-
-  await itemIconLoadPromise;
-}
-
-export function getItemIconUrl(itemId: number): string | null {
-  if (itemId === 0) return null;
-  // start loading on first call, but return fallback URL synchronously
-  if (!itemIconMap) {
-    preloadItemIcons();
-    return cachedUrl(`${CDRAGON_BASE}/v1/items/${itemId}.png`);
-  }
-  return itemIconMap.get(itemId) ?? null;
-}
+export const preloadItemIcons   = itemRegistry.preload;
+export const getItemIconUrl     = itemRegistry.getUrl;
+export const useItemIconsLoaded = itemRegistry.useLoaded;
 
 // ============================================================
 // 符文图标（ID数据来源: https://darkintaqt.com/blog/perk-ids）
