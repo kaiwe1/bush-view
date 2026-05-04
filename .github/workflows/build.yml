@@ -1,15 +1,14 @@
 name: Build Bush View (Windows)
 
+# 当你推送以 v 开头的标签时触发，如 v1.0.1
 on:
   push:
-    branches: [ "master" ]
-  pull_request:
-    branches: [ "master" ]
+    tags:
+      - 'v*'
 
 jobs:
-  build-windows:
+  publish:
     runs-on: windows-latest
-
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -23,19 +22,9 @@ jobs:
       - name: Install Dependencies
         run: npm install
 
-      # 运行 package：生成解压即用的二进制文件夹
-      - name: Package Application
-        run: npm run package
-
-      # 运行 make：生成安装程序（.exe 安装包）
-      - name: Make Installer
-        run: npm run make
-
-      # 上传产物
-      - name: Upload Artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: BushView-Windows-Build
-          path: |
-            out/bush-view-win32-x64/
-            out/make/squirrel.windows/x64/*.exe
+      - name: Publish to GitHub Releases
+        # 这个命令会运行 package -> make -> publish(上传)
+        run: npm run publish
+        env:
+          # GitHub 自动提供的 Token，无需手动设置 Secret
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
