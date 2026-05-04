@@ -535,6 +535,7 @@ export interface GamePlayer {
   tagLine: string;
   championId: number;
   teamId: number;
+  puuid: string;
 }
 
 export function getGamePlayers(game: Game): GamePlayer[] {
@@ -547,6 +548,7 @@ export function getGamePlayers(game: Game): GamePlayer[] {
       tagLine: identity.player.tagLine,
       championId: participant?.championId ?? 0,
       teamId: participant?.teamId ?? 0,
+      puuid: identity.player.puuid,
     };
   });
 }

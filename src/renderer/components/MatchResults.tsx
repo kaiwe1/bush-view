@@ -45,6 +45,7 @@ interface MatchResultsProps {
   championUsage: ChampionUsage[];
   recentGames: Game[];
   rankedStats: RankedStats | null;
+  onPlayerClick?: (gameName: string, tagLine: string) => void;
 }
 
 export function MatchResults({
@@ -56,6 +57,7 @@ export function MatchResults({
   championUsage,
   recentGames,
   rankedStats,
+  onPlayerClick,
 }: MatchResultsProps) {
   useItemIconsLoaded();
   useSpellIconsLoaded();
@@ -296,12 +298,15 @@ export function MatchResults({
                   const subStyle = stats?.perkSubStyle ?? 0; // 副系符文 ID
                   return (
                     <TableRow key={game.gameId}>
+                      {/* 结果 */}
                       <TableCell>
                         <span className={win ? 'text-blue-500 font-semibold' : 'text-red-500 font-semibold'}>
                           {win ? '胜利' : '失败'}
                         </span>
                       </TableCell>
+                      {/* 模式 */}
                       <TableCell className="text-sm">{formatGameMode(game)}</TableCell>
+                      {/* 战绩详情 */}
                       <TableCell>
                         {participant && stats ? (
                           <div className="flex items-center gap-2">
@@ -426,29 +431,48 @@ export function MatchResults({
                           <span className="text-sm text-muted-foreground">-</span>
                         )}
                       </TableCell>
+                      {/* 玩家 */}
                       <TableCell>
                         {(() => {
                           const players = getGamePlayers(game);
                           const blue = players.filter((p) => p.teamId === 100);
                           const red = players.filter((p) => p.teamId === 200);
+                          const isSelf = (p: GamePlayer) => p.puuid === summoner.puuid;
                           const renderTeam = (team: GamePlayer[]) => (
                             <div className="flex flex-col gap-0.5">
-                              {team.map((p, i) => (
-                                <div key={i} className="flex items-center gap-1">
-                                  <img
-                                    src={getChampionIconUrl(p.championId)}
-                                    alt=""
-                                    className="w-4 h-4 rounded-full"
-                                    onError={(e) => {
-                                      (e.target as HTMLImageElement).style.display = 'none';
-                                    }}
-                                  />
+                              {team.map((p, i) => {
+                                const self = isSelf(p);
+                                const nameEl = (
                                   <span className="text-xs truncate max-w-[100px]">
                                     {p.gameName}
                                     <span className="text-muted-foreground">#{p.tagLine}</span>
                                   </span>
-                                </div>
-                              ))}
+                                );
+                                return (
+                                  <div key={i} className="flex items-center gap-1">
+                                    <img
+                                      src={getChampionIconUrl(p.championId)}
+                                      alt=""
+                                      className="w-4 h-4 rounded-full"
+                                      onError={(e) => {
+                                        (e.target as HTMLImageElement).style.display = 'none';
+                                      }}
+                                    />
+                                    {self || !onPlayerClick ? (
+                                      nameEl
+                                    ) : (
+                                      <button
+                                        className="text-xs truncate max-w-[100px] hover:text-amber-400 transition-colors cursor-pointer text-left"
+                                        onClick={() => onPlayerClick(p.gameName, p.tagLine)}
+                                        title={`查看 ${p.gameName}#${p.tagLine} 的资料`}
+                                      >
+                                        {p.gameName}
+                                        <span className="text-muted-foreground">#{p.tagLine}</span>
+                                      </button>
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
                           );
                           return (
@@ -459,6 +483,7 @@ export function MatchResults({
                           );
                         })()}
                       </TableCell>
+                      {/* 时间 */}
                       <TableCell className="text-sm text-muted-foreground whitespace-nowrap">
                         {game.gameCreationDate
                           ? new Date(game.gameCreationDate).toLocaleString('zh-CN', {
@@ -469,9 +494,11 @@ export function MatchResults({
                             })
                           : '-'}
                       </TableCell>
+                      {/* 时长 */}
                       <TableCell className="text-sm text-muted-foreground">
                         {formatDuration(game.gameDuration)}
                       </TableCell>
+                      {/* 版本 */}
                       <TableCell className="text-right text-sm text-muted-foreground">
                         {game.gameVersion?.split('.').slice(0, 2).join('.')}
                       </TableCell>

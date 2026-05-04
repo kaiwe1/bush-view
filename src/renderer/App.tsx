@@ -1,14 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { SearchTab } from './components/SearchTab';
 import { ProfileTab } from './components/ProfileTab';
 import { VersionTab } from './components/VersionTab';
 import { Header } from './components/Header';
 import { preloadItemIcons, preloadSummonerSpellIcons } from './utils';
-
-type Tab = 'search' | 'profile' | 'version';
+import { useAppStore } from './store/useAppStore';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<Tab>('search');
+  const activeTab = useAppStore((s) => s.activeTab);
 
   useEffect(() => {
     preloadItemIcons();
@@ -17,7 +16,7 @@ function App() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Header activeTab={activeTab} onTabChange={setActiveTab} />
+      <Header />
 
       <main className="max-w-6xl mx-auto px-6 py-6">
         <div className={activeTab === 'search' ? '' : 'hidden'}>

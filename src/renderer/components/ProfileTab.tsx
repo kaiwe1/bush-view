@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, User } from 'lucide-react';
-import type { SummonerInfo, MatchInfo, Game, RankedStats } from '../../shared/types';
+import type { SummonerInfo, MatchInfo, RankedStats } from '../../shared/types';
 import { getPlatformIdFromToken, calculateKDA, calculateRadarStats, getChampionUsage } from '../utils';
 import type { KdaStats, RadarStats, ChampionUsage } from '../utils';
 import { MatchResults } from './MatchResults';
+import { useAppStore } from '../store/useAppStore';
 
 export function ProfileTab() {
   const [profileLoading, setProfileLoading] = useState(false);
@@ -13,6 +14,8 @@ export function ProfileTab() {
   const [matches, setMatches] = useState<MatchInfo | null>(null);
   const [rankedStats, setRankedStats] = useState<RankedStats | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const triggerSearch = useAppStore((s) => s.triggerSearch);
 
   useEffect(() => {
     setProfileLoading(true);
@@ -92,6 +95,10 @@ export function ProfileTab() {
     return matches.games.games.slice(0, 20);
   }, [matches]);
 
+  const handlePlayerClick = (gameName: string, tagLine: string) => {
+    triggerSearch(gameName, tagLine);
+  };
+
   if (profileLoading) {
     return (
       <Card>
@@ -136,6 +143,7 @@ export function ProfileTab() {
       championUsage={championUsage}
       recentGames={recentGames}
       rankedStats={rankedStats}
+      onPlayerClick={handlePlayerClick}
     />
   );
 }

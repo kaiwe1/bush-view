@@ -1,12 +1,12 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Loader2, Search, ArrowLeft } from 'lucide-react';
-import type { SummonerInfo, MatchInfo, Game, RankedStats } from '../../shared/types';
+import type { SummonerInfo, MatchInfo, RankedStats } from '../../shared/types';
 import { calculateKDA, calculateRadarStats, getChampionUsage, parseRiotId } from '../utils';
-import type { KdaStats, RadarStats, ChampionUsage } from '../utils';
 import { MatchResults } from './MatchResults';
+import { useAppStore } from '../store/useAppStore';
 
 export function SearchTab() {
   const [searchName, setSearchName] = useState('');
@@ -17,14 +17,22 @@ export function SearchTab() {
   const [rankedStats, setRankedStats] = useState<RankedStats | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSearch = async () => {
-    const riotId = parseRiotId(searchName);
+  const searchTarget = useAppStore((s) => s.searchTarget);
+  const triggerSearch = useAppStore((s) => s.triggerSearch);
+  const lastTimestamp = useRef(0);
+
+  const performSearch = useCallback(async (name: string) => {
+    const riotId = parseRiotId(name);
     if (!riotId) {
       setError('请输入正确的 Riot ID 格式（如 游戏ID#000）');
       return;
     }
     setSearchLoading(true);
     setError(null);
+    setSummoner(null);
+    setMatches(null);
+    setRankedStats(null);
+    setPlatformId(null);
 
     try {
       const aliasData = await window.electronAPI.lookupAlias(riotId.gameName, riotId.tagLine);
@@ -69,6 +77,22 @@ export function SearchTab() {
       setError(err instanceof Error ? err.message : '搜索失败');
     }
     setSearchLoading(false);
+  }, []);
+
+  // Watch for cross-tab search triggers (from ProfileTab, SearchTab etc.)
+  useEffect(() => {
+    if (searchTarget && searchTarget.timestamp !== lastTimestamp.current) {
+      lastTimestamp.current = searchTarget.timestamp;
+      const name = `${searchTarget.gameName}#${searchTarget.tagLine}`;
+      setSearchName(name);
+      performSearch(name);
+    }
+  }, [searchTarget, performSearch]);
+
+  const handleSearch = () => performSearch(searchName);
+
+  const handlePlayerClick = (gameName: string, tagLine: string) => {
+    triggerSearch(gameName, tagLine);
   };
 
   const handleClear = () => {
@@ -100,6 +124,7 @@ export function SearchTab() {
     return matches.games.games.slice(0, 20);
   }, [matches]);
 
+  // If we have a summoner, show their profile and match results. Otherwise, show the search form.
   if (summoner) {
     return (
       <div className="space-y-4">
@@ -116,6 +141,7 @@ export function SearchTab() {
           championUsage={championUsage}
           recentGames={recentGames}
           rankedStats={rankedStats}
+          onPlayerClick={handlePlayerClick}
         />
       </div>
     );
