@@ -1,0 +1,41 @@
+name: Build Bush View (Windows)
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm install
+
+      # 运行 package：生成解压即用的二进制文件夹
+      - name: Package Application
+        run: npm run package
+
+      # 运行 make：生成安装程序（.exe 安装包）
+      - name: Make Installer
+        run: npm run make
+
+      # 上传产物
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: BushView-Windows-Build
+          path: |
+            out/bush-view-win32-x64/    # package 命令生成的绿色版文件夹
+            out/make/squirrel.windows/x64/*.exe  # make 命令生成的安装程序
