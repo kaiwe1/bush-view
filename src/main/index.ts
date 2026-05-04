@@ -1,8 +1,10 @@
-import { app, BrowserWindow, ipcMain, protocol } from 'electron';
+import { app, BrowserWindow, ipcMain, Menu, protocol } from 'electron';
+
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import { getCurrentSummoner, getCurrentSummonerMatchHistory, getGameById, getLoginSession, lookupAlias, getSummonerByPuuid, getMatchHistoryByPuuid, getRankedStats } from './api/lcu';
 import { getOrDownloadImage } from './imageCache';
+
 
 // IPC handlers
 ipcMain.handle('get-current-summoner', async () => {
@@ -122,14 +124,21 @@ const createWindow = () => {
     );
   }
 
-  // Open the DevTools.
-  mainWindow.webContents.openDevTools();
+  // 如果应用没有被打包（即处于开发环境），则打开 DevTools
+  if (!app.isPackaged) {
+    mainWindow.webContents.openDevTools();
+  }
 };
 
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', () => {
+  // Remove default menu bar in production, keep in dev mode
+  if (app.isPackaged) {
+    Menu.setApplicationMenu(null);
+  }
+
   // Register protocol handler (must be after app.ready).
   protocol.handle('cached-cdragon', async (request) => {
     try {

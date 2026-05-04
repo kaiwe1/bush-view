@@ -33,7 +33,7 @@ export function getLCUCredentials(): LCUCredentials | null {
 export async function makeLCURequest(endpoint: string, method = 'GET', data?: unknown, retries = 1): Promise<unknown> {
   const creds = getLCUCredentials();
   if (!creds) {
-    throw new Error('英雄联盟客户端未运行或无法获取连接信息');
+    throw new Error('英雄联盟客户端未运行或未以管理员权限运行');
   }
 
   const url = `https://127.0.0.1:${creds.port}${endpoint}`;

@@ -266,7 +266,7 @@ export function MatchResults({
         </Card>
       )}
 
-      {/* 最近游戏 */}
+      {/* 近期对局 */}
       {recentGames.length > 0 && (
         <Card>
           <CardHeader>
@@ -278,8 +278,8 @@ export function MatchResults({
                 <TableRow>
                   <TableHead className="w-16">结果</TableHead>
                   <TableHead>模式</TableHead>
-                  <TableHead className="w-[340px]">战绩详情</TableHead>
-                  <TableHead className="w-[280px]">玩家</TableHead>
+                  <TableHead>战绩详情</TableHead>
+                  <TableHead>玩家</TableHead>
                   <TableHead>时间</TableHead>
                   <TableHead>时长</TableHead>
                   <TableHead className="text-right">版本</TableHead>
@@ -383,7 +383,6 @@ export function MatchResults({
                               {(() => {
                                 if (primaryStyle === 0 || subStyle === 0) return null;
                                 const keystoneUrl = getPerkIconUrl(stats.perk0, primaryStyle);
-                                const primaryUrl = getPerkStyleIconUrl(primaryStyle);
                                 const subUrl = getPerkStyleIconUrl(subStyle);
                                 return (
                                   <>
@@ -391,14 +390,6 @@ export function MatchResults({
                                       src={keystoneUrl ?? ''}
                                       alt=""
                                       className="w-5 h-5 rounded-full bg-muted"
-                                      onError={(e) => {
-                                        (e.target as HTMLImageElement).style.display = 'none';
-                                      }}
-                                    />
-                                    <img
-                                      src={primaryUrl ?? ''}
-                                      alt=""
-                                      className="w-4 h-4 rounded-full bg-muted"
                                       onError={(e) => {
                                         (e.target as HTMLImageElement).style.display = 'none';
                                       }}

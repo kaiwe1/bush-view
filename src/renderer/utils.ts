@@ -40,6 +40,7 @@ export function formatGameMode(game: Game): string {
     TFT: '云顶之弈',
     CHERRY: '斗魂竞技场',
     SWIFTPLAY: '快速模式',
+    PRACTICETOOL: '训练模式'
   };
   if (game.gameMode === 'CLASSIC') {
     const queueMap: Record<number, string> = {
