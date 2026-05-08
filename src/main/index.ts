@@ -105,11 +105,14 @@ if (started) {
   app.quit();
 }
 
+const appIcon = path.join(__dirname, '../../assets/icon.png');
+
 const createWindow = () => {
   // Create the browser window.
   const mainWindow = new BrowserWindow({
     width: 800,
     height: 600,
+    icon: appIcon,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },
@@ -134,6 +137,11 @@ const createWindow = () => {
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
 app.on('ready', () => {
+  // macOS程序坞图标
+  if (process.platform === 'darwin') {
+    app.dock?.setIcon(appIcon);
+  }
+
   // Remove default menu bar in production, keep in dev mode
   if (app.isPackaged) {
     Menu.setApplicationMenu(null);
