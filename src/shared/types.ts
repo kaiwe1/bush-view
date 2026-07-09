@@ -1,3 +1,5 @@
+import type { PlatformId } from './platforms';
+
 // ============================================================
 // 别名查询（LCU: /lol-summoner/v1/alias/lookup）
 // ============================================================
@@ -39,10 +41,9 @@ export interface LoginSession {
   username: string;
 }
 
-// ============================================================
-// 召唤师信息（LCU API: /lol-summoner/v1/current-summoner）
-// ============================================================
-
+/**
+ * 召唤师信息（LCU API: /lol-summoner/v1/current-summoner）
+ */
 export interface SummonerInfo {
   /** 账号 ID */
   accountId: number;
@@ -89,11 +90,7 @@ export interface SummonerInfo {
   xpUntilNextLevel: number;
 }
 
-// ============================================================
-// 比赛记录（LCU API: /lol-match-history/v1/products/lol/current-summoner/matches）
-// ============================================================
-
-/** 比赛记录分页响应 */
+/** 比赛记录（LCU API: /lol-match-history/v1/products/lol/current-summoner/matches） */
 export interface MatchInfo {
   /** 当前查询的账号 ID */
   accountId: number;
@@ -110,8 +107,8 @@ export interface MatchInfo {
     /** 比赛列表 */
     games: Game[];
   };
-  /** 平台 ID（如 HN1=台服） */
-  platformId: string;
+  /** 大区 ID，例如 HN1 为艾欧尼亚 */
+  platformId: PlatformId;
 }
 
 /** 单场比赛 */
@@ -140,8 +137,8 @@ export interface Game {
   participantIdentities: ParticipantIdentity[];
   /** 参与者数据列表（实际对局数据，通过 participantId 与 identities 关联） */
   participants: Participant[];
-  /** 平台 ID */
-  platformId: string;
+  /** 大区 ID，例如 HN1 为艾欧尼亚 */
+  platformId: PlatformId;
   /** 队列 ID（420=单双排, 440=灵活排位, 450=极地大乱斗, 2400=斗魂竞技场） */
   queueId: number;
   /** 赛季 ID */
@@ -156,11 +153,11 @@ export interface ParticipantIdentity {
   player: {
     accountId: number;
     currentAccountId: number;
-    currentPlatformId: string;
+    currentPlatformId: PlatformId;
     /** 游戏内名称 */
     gameName: string;
     matchHistoryUri: string;
-    platformId: string;
+    platformId: PlatformId;
     /** 头像 ID */
     profileIcon: number;
     /** PUUID（全局唯一） */
@@ -506,6 +503,9 @@ export interface RankedSeason {
   nextSeasonStart: number;
 }
 
+/**
+ * 排位数据
+ */
 export interface RankedStats {
   /** 当前赛季分段点数 */
   currentSeasonSplitPoints: number;
@@ -549,10 +549,10 @@ export interface LoginTokenPayload {
     cuid: number;
     uname: string;
     /** 当前平台 ID（如 HN1=电信一区艾欧尼亚） */
-    cpid: string;
+    cpid: PlatformId;
     ptrid: string;
     /** 平台 ID */
-    pid: string;
+    pid: PlatformId;
     state: string;
   }>;
   exp: number;

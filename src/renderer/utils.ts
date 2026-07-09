@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { PLATFORM_TENCENT } from '../shared/platforms';
+import { PLATFORM_TENCENT, type PlatformId } from '../shared/platforms';
 import type { LoginTokenPayload, Game, Participant } from '../shared/types';
 
 const CDRAGON_BASE = 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default';
@@ -167,6 +167,9 @@ export function calculateRadarStats(games: Game[], puuid: string): RadarStats | 
   };
 }
 
+/**
+ * 计算 puuid 玩家在给定对局列表中的 KDA、胜率等统计数据
+ */
 export function calculateKDA(games: Game[], puuid: string): KdaStats {
   let kills = 0;
   let deaths = 0;
@@ -195,10 +198,9 @@ export function calculateKDA(games: Game[], puuid: string): KdaStats {
   return { kills, deaths, assists, kda, games: gameCount, wins, winRate };
 }
 
-// ============================================================
-// 英雄使用统计
-// ============================================================
-
+/**
+ * 英雄使用统计
+ */
 export interface ChampionUsage {
   championId: number;
   count: number;
@@ -229,8 +231,9 @@ export function getChampionUsage(games: Game[], puuid: string): ChampionUsage[] 
     .sort((a, b) => b.count - a.count);
 }
 
-export function getPlatformName(platformId: string): string {
-  return PLATFORM_TENCENT[platformId] ?? platformId;
+export function getPlatformName(platformId: PlatformId): string {
+  const platformNames: Record<string, string> = PLATFORM_TENCENT;
+  return platformNames[platformId] ?? platformId;
 }
 
 export function parseRiotId(input: string): { gameName: string; tagLine: string } | null {
@@ -303,7 +306,7 @@ export function formatQueueType(queueType: string): string {
   return QUEUE_NAMES[queueType] ?? queueType;
 }
 
-export function getPlatformIdFromToken(idToken: string): string | null {
+export function getPlatformIdFromToken(idToken: string): PlatformId | null {
   const payload = parseJwtPayload(idToken);
   return payload?.lol[0]?.cpid ?? null;
 }

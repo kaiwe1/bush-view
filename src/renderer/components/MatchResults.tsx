@@ -9,6 +9,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import type { SummonerInfo, MatchInfo, Game, RankedStats } from '../../shared/types';
+import type { PlatformId } from '../../shared/platforms';
 import {
   getProfileIconUrl,
   getPlatformName,
@@ -38,7 +39,7 @@ const RANKED_QUEUES = ['RANKED_SOLO_5x5', 'RANKED_FLEX_SR'] as const;
 
 interface MatchResultsProps {
   summoner: SummonerInfo;
-  platformId: string | null;
+  platformId: PlatformId | null;
   matches: MatchInfo | null;
   kdaStats: KdaStats | null;
   radarStats: RadarStats | null;
@@ -64,7 +65,7 @@ export function MatchResults({
 
   return (
     <div className="space-y-6">
-      {/* Summoner Card */}
+      {/* 召唤师卡片 */}
       <Card>
         <CardContent className="flex items-center gap-6 pt-6">
           {/* 左侧：召唤师基本信息 */}
@@ -241,7 +242,7 @@ export function MatchResults({
           </CardHeader>
           <CardContent>
             <div className="flex flex-wrap gap-3">
-              {championUsage.slice(0, 8).map((champ) => (
+              {championUsage.slice(0, 6).map((champ) => (
                 <div
                   key={champ.championId}
                   className="flex items-center gap-2 px-3 py-2 rounded-lg border bg-muted/50"

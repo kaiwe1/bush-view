@@ -2,7 +2,7 @@
 // 国服平台 ID → 区服名称映射
 // ============================================================
 
-export const PLATFORM_TENCENT: Record<string, string> = {
+export const PLATFORM_TENCENT = {
   BGP1: '全网通区 男爵领域',
   BGP2: '峡谷之巅',
   EDU1: '教育网专区',
@@ -33,4 +33,11 @@ export const PLATFORM_TENCENT: Record<string, string> = {
   WT5: '网通五区 恕瑞玛',
   WT6: '网通六区 扭曲丛林',
   WT7: '网通七区 巨龙之巢',
-};
+} as const satisfies Record<string, string>;
+
+export type KnownPlatformId = keyof typeof PLATFORM_TENCENT;
+
+/**
+ * 大区 ID，例如 HN1 为艾欧尼亚。
+ */
+export type PlatformId = KnownPlatformId | (string & {});

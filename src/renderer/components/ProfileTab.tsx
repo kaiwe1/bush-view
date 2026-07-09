@@ -1,16 +1,18 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, User } from 'lucide-react';
 import type { SummonerInfo, MatchInfo, RankedStats } from '../../shared/types';
-import { getPlatformIdFromToken, calculateKDA, calculateRadarStats, getChampionUsage } from '../utils';
-import type { KdaStats, RadarStats, ChampionUsage } from '../utils';
+import type { PlatformId } from '../../shared/platforms';
+import { getPlatformIdFromToken } from '../utils';
+import { enrichRecentMatchHistory } from '../matchData';
+import { useMatchSummary } from '../hooks/useMatchSummary';
 import { MatchResults } from './MatchResults';
 import { useAppStore } from '../store/useAppStore';
 
 export function ProfileTab() {
   const [profileLoading, setProfileLoading] = useState(false);
   const [summoner, setSummoner] = useState<SummonerInfo | null>(null);
-  const [platformId, setPlatformId] = useState<string | null>(null);
+  const [platformId, setPlatformId] = useState<PlatformId | null>(null);
   const [matches, setMatches] = useState<MatchInfo | null>(null);
   const [rankedStats, setRankedStats] = useState<RankedStats | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -39,22 +41,7 @@ export function ProfileTab() {
         }
 
         if (matchData && !('error' in matchData)) {
-          // Fetch full game data for recent games to show all 10 participants
-          const recentGameIds = matchData.games.games.slice(0, 20).map(g => g.gameId);
-          const fullResults = await Promise.all(
-            recentGameIds.map((gameId) =>
-              window.electronAPI.getGameById(gameId).catch(() => ({ error: 'fetch failed' }))
-            )
-          );
-          const enrichedGames = matchData.games.games.map((game, i) => {
-            const full = i < 20 ? fullResults[i] : null;
-            if (full && !('error' in full)) return full;
-            return game;
-          });
-          const matches = {
-            ...matchData,
-            games: { ...matchData.games, games: enrichedGames },
-          };
+          const matches = await enrichRecentMatchHistory(matchData);
           console.log('Match Data:', matches);
           setMatches(matches);
         }
@@ -75,25 +62,10 @@ export function ProfileTab() {
       });
   }, []);
 
-  const kdaStats = useMemo(() => {
-    if (!matches?.games?.games || !summoner?.puuid) return null;
-    return calculateKDA(matches.games.games, summoner.puuid);
-  }, [matches, summoner]);
-
-  const radarStats = useMemo(() => {
-    if (!matches?.games?.games || !summoner?.puuid) return null;
-    return calculateRadarStats(matches.games.games, summoner.puuid);
-  }, [matches, summoner]);
-
-  const championUsage = useMemo(() => {
-    if (!matches?.games?.games || !summoner?.puuid) return [];
-    return getChampionUsage(matches.games.games, summoner.puuid);
-  }, [matches, summoner]);
-
-  const recentGames = useMemo(() => {
-    if (!matches?.games?.games) return [];
-    return matches.games.games.slice(0, 20);
-  }, [matches]);
+  const { kdaStats, radarStats, championUsage, recentGames } = useMatchSummary(
+    matches?.games.games,
+    summoner?.puuid,
+  );
 
   const handlePlayerClick = (gameName: string, tagLine: string) => {
     triggerSearch(gameName, tagLine);
