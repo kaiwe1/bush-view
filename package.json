@@ -1,7 +1,7 @@
 {
   "name": "bush-view",
   "productName": "bush-view",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "League of Legends match data analysis tool.",
   "main": ".vite/build/main.js",
   "private": true,
