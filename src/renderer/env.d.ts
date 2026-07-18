@@ -1,4 +1,11 @@
-import type { SummonerInfo, MatchInfo, AliasLookup, RankedStats } from '../shared/types';
+import type {
+  SummonerInfo,
+  MatchInfo,
+  AliasLookup,
+  RankedStats,
+  OpggChampionStats,
+  Game,
+} from '../shared/types';
 
 declare global {
   interface Window {
@@ -9,8 +16,10 @@ declare global {
       lookupAlias: (gameName: string, tagLine: string) => Promise<AliasLookup | { error: string }>;
       getSummonerByPuuid: (puuid: string) => Promise<SummonerInfo | { error: string }>;
       getMatchHistoryByPuuid: (puuid: string) => Promise<MatchInfo | { error: string }>;
-      getGameById: (gameId: number) => Promise<import('../../shared/types').Game | { error: string }>;
+      getGameById: (gameId: number) => Promise<Game | { error: string }>;
       getRankedStats: (puuid: string) => Promise<RankedStats | { error: string }>;
+      getOpggChampionStats: (forceRefresh?: boolean) =>
+        Promise<OpggChampionStats | { error: string }>;
     };
   }
 }

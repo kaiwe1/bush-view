@@ -3,6 +3,7 @@ import { app, BrowserWindow, ipcMain, Menu, protocol } from 'electron';
 import path from 'node:path';
 import started from 'electron-squirrel-startup';
 import { getCurrentSummoner, getCurrentSummonerMatchHistory, getGameById, getLoginSession, lookupAlias, getSummonerByPuuid, getMatchHistoryByPuuid, getRankedStats } from './api/lcu';
+import { getOpggChampionStats } from './api/opgg';
 import { getOrDownloadImage } from './imageCache';
 
 
@@ -87,6 +88,17 @@ ipcMain.handle('get-match-history-by-puuid', async (_event, puuid: string) => {
 ipcMain.handle('get-ranked-stats', async (_event, puuid: string) => {
   try {
     return await getRankedStats(puuid);
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      return { error: error.message };
+    }
+    return { error: 'An unknown error occurred' };
+  }
+});
+
+ipcMain.handle('get-opgg-champion-stats', async (_event, forceRefresh?: boolean) => {
+  try {
+    return await getOpggChampionStats(Boolean(forceRefresh));
   } catch (error: unknown) {
     if (error instanceof Error) {
       return { error: error.message };

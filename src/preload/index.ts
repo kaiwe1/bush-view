@@ -12,4 +12,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getMatchHistoryByPuuid: (puuid: string) => ipcRenderer.invoke('get-match-history-by-puuid', puuid),
   getGameById: (gameId: number) => ipcRenderer.invoke('get-game-by-id', gameId),
   getRankedStats: (puuid: string) => ipcRenderer.invoke('get-ranked-stats', puuid),
+  getOpggChampionStats: (forceRefresh?: boolean) =>
+    ipcRenderer.invoke('get-opgg-champion-stats', forceRefresh),
 });

@@ -25,7 +25,7 @@ export const tabs = [
     label: '版本数据',
     icon: Database,
     component: VersionTab,
-    hidden: true,
+    hidden: false,
   },
 ] as const satisfies readonly {
   key: string;

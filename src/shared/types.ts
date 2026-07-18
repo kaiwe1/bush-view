@@ -536,9 +536,58 @@ export interface RankedStats {
 }
 
 // ============================================================
-// 登录 Token Payload（JWT idToken 解析结果）
+// OP.GG version data
 // ============================================================
 
+export interface OpggWeakAgainstChampion {
+  championName: string;
+  championKey?: string;
+  imageUrl?: string;
+  winRateAgainst?: number;
+}
+
+export interface OpggChampionTierRow {
+  rank: number;
+  championName: string;
+  championKey?: string;
+  imageUrl?: string;
+  position?: string;
+  tier?: number | string;
+  winRate?: number;
+  pickRate?: number;
+  banRate?: number;
+  games?: number;
+  weakAgainst: OpggWeakAgainstChampion[];
+}
+
+export type OpggChampionPositionKey = 'top' | 'jungle' | 'mid' | 'adc' | 'support';
+
+export interface OpggChampionPositionStats {
+  key: OpggChampionPositionKey;
+  name: string;
+  sourceUrl: string;
+  patch?: string;
+  lastUpdated?: string;
+  totalSamples?: number;
+  champions: OpggChampionTierRow[];
+}
+
+export interface OpggChampionStats {
+  sourceUrl: string;
+  region: string;
+  tier: string;
+  queueType: string;
+  patch?: string;
+  lastUpdated?: string;
+  totalSamples?: number;
+  champions: OpggChampionTierRow[];
+  positions: OpggChampionPositionStats[];
+  fetchedAt: string;
+}
+
+/**
+ * 登录 Token Payload（JWT idToken 解析结果）
+ */
 export interface LoginTokenPayload {
   sub: string;
   aud: string;
