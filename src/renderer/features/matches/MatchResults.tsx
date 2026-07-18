@@ -269,23 +269,22 @@ export function MatchResults({
         </Card>
       )}
 
-      {/* 近期对局 */}
+      {/* 最近20场对局 */}
       {recentGames.length > 0 && (
         <Card>
           <CardHeader>
-            <CardTitle>近期对局</CardTitle>
+            <CardTitle>最近20场对局</CardTitle>
           </CardHeader>
           <CardContent>
-            <Table>
+            <Table className="min-w-[1040px]">
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-16">结果</TableHead>
                   <TableHead>模式</TableHead>
-                  <TableHead>战绩详情</TableHead>
+                  <TableHead className="min-w-[280px]">战绩详情</TableHead>
                   <TableHead>玩家</TableHead>
                   <TableHead>时间</TableHead>
                   <TableHead>时长</TableHead>
-                  <TableHead className="text-right">版本</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -297,6 +296,7 @@ export function MatchResults({
                   const stats = participant?.stats;
                   const primaryStyle = stats?.perkPrimaryStyle ?? 0; // 主系符文 ID
                   const subStyle = stats?.perkSubStyle ?? 0; // 副系符文 ID
+
                   return (
                     <TableRow key={game.gameId}>
                       {/* 结果 */}
@@ -308,9 +308,9 @@ export function MatchResults({
                       {/* 模式 */}
                       <TableCell className="text-sm">{formatGameMode(game)}</TableCell>
                       {/* 战绩详情 */}
-                      <TableCell>
+                      <TableCell className="min-w-[280px]">
                         {participant && stats ? (
-                          <div className="flex items-center gap-2">
+                          <div className="flex min-w-[248px] items-center gap-2">
                             {/* 英雄头像 */}
                             <img
                               src={getChampionIconUrl(participant.championId)}
@@ -339,8 +339,9 @@ export function MatchResults({
                                 }}
                               />
                             </div>
-                            {/* 装备 */}
+                            {/* 装备栏 */}
                             <div className="flex flex-col gap-0.5 flex-shrink-0">
+                              {/* 装备栏1 */}
                               <div className="flex gap-0.5">
                                 {[stats.item0, stats.item1, stats.item2, stats.item3].map((itemId, i) => {
                                   const url = getItemIconUrl(itemId);
@@ -362,6 +363,7 @@ export function MatchResults({
                                   );
                                 })}
                               </div>
+                              {/* 装备栏2 */}
                               <div className="flex gap-0.5">
                                 {[stats.item4, stats.item5, stats.item6].map((itemId, i) => {
                                   const url = getItemIconUrl(itemId);
@@ -498,10 +500,6 @@ export function MatchResults({
                       {/* 时长 */}
                       <TableCell className="text-sm text-muted-foreground">
                         {formatDuration(game.gameDuration)}
-                      </TableCell>
-                      {/* 版本 */}
-                      <TableCell className="text-right text-sm text-muted-foreground">
-                        {game.gameVersion?.split('.').slice(0, 2).join('.')}
                       </TableCell>
                     </TableRow>
                   );
