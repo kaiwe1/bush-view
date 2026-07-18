@@ -46,7 +46,7 @@ export function SearchForm({
             <Input
               value={query}
               onChange={(e) => onQueryChange(e.target.value)}
-              placeholder="游戏ID#标签，例如 柚柚妹#12345"
+              placeholder="游戏ID#标签"
               className="h-12 border-0 bg-transparent px-0 text-base shadow-none focus-visible:ring-0 focus-visible:ring-offset-0"
             />
           </div>

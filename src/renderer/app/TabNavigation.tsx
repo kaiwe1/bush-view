@@ -1,13 +1,6 @@
 import { Button } from '@/components/ui/button';
-import { Search, User, Database } from 'lucide-react';
 import { useAppStore } from '../store/useAppStore';
-import type { Tab } from '../store/useAppStore';
-
-const tabItems: { key: Tab; label: string; icon: React.ComponentType<{ className?: string }>; hidden?: boolean }[] = [
-  { key: 'search', label: '战绩查询', icon: Search },
-  { key: 'profile', label: '个人资料', icon: User },
-  { key: 'version', label: '版本数据', icon: Database, hidden: true },
-];
+import { tabs } from './tabs';
 
 export function TabNavigation() {
   const activeTab = useAppStore((s) => s.activeTab);
@@ -17,7 +10,7 @@ export function TabNavigation() {
     <header className="border-b">
       <div className="max-w-6xl mx-auto px-6 py-3 flex items-center gap-6">
         <nav className="flex gap-1">
-          {tabItems.filter(t => !t.hidden).map(({ key, label, icon: Icon }) => (
+          {tabs.filter((tab) => !tab.hidden).map(({ key, label, icon: Icon }) => (
             <Button
               key={key}
               variant={activeTab === key ? 'secondary' : 'ghost'}

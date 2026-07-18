@@ -1,5 +1,5 @@
-import type { RadarStats } from '../utils';
-import { RADAR_CAPS } from '../utils';
+import type { RadarStats } from '../../utils';
+import { RADAR_CAPS } from '../../utils';
 
 interface RadarChartProps {
   stats: RadarStats;

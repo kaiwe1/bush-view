@@ -8,8 +8,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import type { SummonerInfo, MatchInfo, Game, RankedStats } from '../../shared/types';
-import type { PlatformId } from '../../shared/platforms';
+import type { SummonerInfo, MatchInfo, Game, RankedStats } from '../../../shared/types';
+import type { PlatformId } from '../../../shared/platforms';
 import {
   getProfileIconUrl,
   getPlatformName,
@@ -31,7 +31,7 @@ import {
   type ChampionUsage,
   type RadarStats,
   type GamePlayer,
-} from '../utils';
+} from '../../utils';
 import { RadarChart } from './RadarChart';
 
 const RANKED_QUEUES = ['RANKED_SOLO_5x5', 'RANKED_FLEX_SR'] as const;
@@ -171,7 +171,7 @@ export function MatchResults({
       {kdaStats && (
         <Card>
           <CardHeader>
-            <CardTitle>近期 KDA</CardTitle>
+            <CardTitle>KDA</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex items-center gap-6 flex-wrap">

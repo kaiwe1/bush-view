@@ -1,8 +1,6 @@
 import { useEffect } from 'react';
-import { SearchTab } from './components/SearchTab';
-import { ProfileTab } from './components/ProfileTab';
-import { VersionTab } from './components/VersionTab';
-import { TabNavigation } from './components/TabNavigation';
+import { TabNavigation } from './app/TabNavigation';
+import { tabs } from './app/tabs';
 import { preloadItemIcons, preloadSummonerSpellIcons } from './utils';
 import { useAppStore } from './store/useAppStore';
 
@@ -21,15 +19,11 @@ function App() {
       <TabNavigation />
       {/* main content */}
       <main className="max-w-6xl mx-auto px-6 py-6">
-        <div className={activeTab === 'search' ? '' : 'hidden'}>
-          <SearchTab />
-        </div>
-        <div className={activeTab === 'profile' ? '' : 'hidden'}>
-          <ProfileTab />
-        </div>
-        <div className={activeTab === 'version' ? '' : 'hidden'}>
-          <VersionTab />
-        </div>
+        {tabs.map(({ key, component: TabComponent }) => (
+          <div key={key} className={activeTab === key ? '' : 'hidden'}>
+            <TabComponent />
+          </div>
+        ))}
       </main>
     </div>
   );

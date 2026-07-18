@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, User } from 'lucide-react';
-import type { SummonerInfo, MatchInfo, RankedStats } from '../../shared/types';
-import type { PlatformId } from '../../shared/platforms';
-import { getPlatformIdFromToken } from '../utils';
-import { enrichRecentMatchHistory } from '../matchData';
-import { useMatchSummary } from '../hooks/useMatchSummary';
-import { MatchResults } from './MatchResults';
-import { useAppStore } from '../store/useAppStore';
+import type { SummonerInfo, MatchInfo, RankedStats } from '../../../shared/types';
+import type { PlatformId } from '../../../shared/platforms';
+import { getPlatformIdFromToken } from '../../utils';
+import { enrichRecentMatchHistory } from '../../matchData';
+import { useMatchSummary } from '../../hooks/useMatchSummary';
+import { MatchResults } from '../matches/MatchResults';
+import { useAppStore } from '../../store/useAppStore';
 
 export function ProfileTab() {
   const [profileLoading, setProfileLoading] = useState(false);

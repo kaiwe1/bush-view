@@ -1,6 +1,5 @@
 import { create } from 'zustand';
-
-export type Tab = 'search' | 'profile' | 'version';
+import type { Tab } from '../app/tabs';
 
 interface SearchParams {
   gameName: string;

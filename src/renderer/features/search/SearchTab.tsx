@@ -1,10 +1,10 @@
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
-import { useMatchSummary } from '../hooks/useMatchSummary';
-import { useSummonerSearch } from '../hooks/useSummonerSearch';
-import { MatchResults } from './MatchResults';
+import { useMatchSummary } from '../../hooks/useMatchSummary';
+import { useSummonerSearch } from '../../hooks/useSummonerSearch';
+import { MatchResults } from '../matches/MatchResults';
 import { SearchForm } from './SearchForm';
-import { useAppStore } from '../store/useAppStore';
+import { useAppStore } from '../../store/useAppStore';
 
 export function SearchTab() {
   const triggerSearch = useAppStore((s) => s.triggerSearch);
