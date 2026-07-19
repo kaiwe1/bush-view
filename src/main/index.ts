@@ -159,7 +159,7 @@ app.on('ready', () => {
     Menu.setApplicationMenu(null);
   }
 
-  // Register protocol handler (must be after app.ready).
+  // 注册 cache-cdragon 协议处理缓存 (必须在 app.ready 之后调用)
   protocol.handle('cached-cdragon', async (request) => {
     try {
       const { data, mimeType } = await getOrDownloadImage(request.url);
