@@ -1,0 +1,19 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Attach Electron Main",
+        "type": "node",
+        "request": "attach",
+        "port": 9229,
+        "restart": true,
+        "sourceMaps": true,
+        "outFiles": [
+          "${workspaceFolder}/.vite/build/**/*.js"
+        ],
+        "skipFiles": [
+          "<node_internals>/**"
+        ]
+      }
+    ]
+  }
