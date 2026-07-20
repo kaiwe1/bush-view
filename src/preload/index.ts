@@ -1,17 +1,23 @@
 // See the Electron documentation for details on how to use preload scripts:
 // https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
 import { contextBridge, ipcRenderer } from 'electron';
+import { IPC_CHANNELS } from '../shared/ipcChannels';
 
+// 向渲染进程暴露一个名为 electronAPI 的全局对象，提供与主进程通信的接口。
 contextBridge.exposeInMainWorld('electronAPI', {
-  getCurrentSummoner: () => ipcRenderer.invoke('get-current-summoner'),
-  getCurrentSummonerMatchHistory: () => ipcRenderer.invoke('get-current-summoner-match-history'),
-  getLoginSession: () => ipcRenderer.invoke('get-login-session'),
+  getCurrentSummoner: () => ipcRenderer.invoke(IPC_CHANNELS.getCurrentSummoner),
+  getCurrentSummonerMatchHistory: () =>
+    ipcRenderer.invoke(IPC_CHANNELS.getCurrentSummonerMatchHistory),
+  getLoginSession: () => ipcRenderer.invoke(IPC_CHANNELS.getLoginSession),
   lookupAlias: (gameName: string, tagLine: string) =>
-    ipcRenderer.invoke('lookup-alias', gameName, tagLine),
-  getSummonerByPuuid: (puuid: string) => ipcRenderer.invoke('get-summoner-by-puuid', puuid),
-  getMatchHistoryByPuuid: (puuid: string) => ipcRenderer.invoke('get-match-history-by-puuid', puuid),
-  getGameById: (gameId: number) => ipcRenderer.invoke('get-game-by-id', gameId),
-  getRankedStats: (puuid: string) => ipcRenderer.invoke('get-ranked-stats', puuid),
+    ipcRenderer.invoke(IPC_CHANNELS.lookupAlias, gameName, tagLine),
+  getSummonerByPuuid: (puuid: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.getSummonerByPuuid, puuid),
+  getMatchHistoryByPuuid: (puuid: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.getMatchHistoryByPuuid, puuid),
+  getGameById: (gameId: number) => ipcRenderer.invoke(IPC_CHANNELS.getGameById, gameId),
+  getRankedStats: (puuid: string) =>
+    ipcRenderer.invoke(IPC_CHANNELS.getRankedStats, puuid),
   getOpggChampionStats: (forceRefresh?: boolean) =>
-    ipcRenderer.invoke('get-opgg-champion-stats', forceRefresh),
+    ipcRenderer.invoke(IPC_CHANNELS.getOpggChampionStats, forceRefresh),
 });

@@ -1,199 +1,46 @@
-import { app, BrowserWindow, ipcMain, Menu, protocol } from 'electron';
-
-import path from 'node:path';
+import { app, BrowserWindow, Menu } from 'electron';
 import started from 'electron-squirrel-startup';
-import { getCurrentSummoner, getCurrentSummonerMatchHistory, getGameById, getLoginSession, lookupAlias, getSummonerByPuuid, getMatchHistoryByPuuid, getRankedStats } from './api/lcu';
-import { getOpggChampionStats } from './api/opgg';
-import { getOrDownloadImage } from './imageCache';
 
+import { appIcon, createMainWindow } from './createWindow';
+import { registerIpcHandlers } from './ipc';
+import {
+  registerCachedCdragonRequestHandler,
+  registerCachedCdragonSchemePrivileges,
+} from './protocols/cachedCdragon';
 
-// IPC handlers
-ipcMain.handle('get-current-summoner', async () => {
-  try {
-    return await getCurrentSummoner();
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      return { error: error.message };
-    }
-    return { error: 'An unknown error occurred' };
-  }
-});
+// 声明 cached-cdragon:// 协议，以便在渲染进程中使用。
+registerCachedCdragonSchemePrivileges();
 
-ipcMain.handle('get-current-summoner-match-history', async () => {
-  try {
-    return await getCurrentSummonerMatchHistory();
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      return { error: error.message };
-    }
-    return { error: 'An unknown error occurred' };
-  }
-});
+// 主进程注册方法。
+registerIpcHandlers();
 
-ipcMain.handle('get-game-by-id', async (_event, gameId: number) => {
-  try {
-    return await getGameById(gameId);
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      return { error: error.message };
-    }
-    return { error: 'An unknown error occurred' };
-  }
-});
-
-ipcMain.handle('get-login-session', async () => {
-  try {
-    return await getLoginSession();
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      return { error: error.message };
-    }
-    return { error: 'An unknown error occurred' };
-  }
-});
-
-ipcMain.handle('lookup-alias', async (_event, gameName: string, tagLine: string) => {
-  try {
-    return await lookupAlias(gameName, tagLine);
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      return { error: error.message };
-    }
-    return { error: 'An unknown error occurred' };
-  }
-});
-
-ipcMain.handle('get-summoner-by-puuid', async (_event, puuid: string) => {
-  try {
-    return await getSummonerByPuuid(puuid);
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      return { error: error.message };
-    }
-    return { error: 'An unknown error occurred' };
-  }
-});
-
-ipcMain.handle('get-match-history-by-puuid', async (_event, puuid: string) => {
-  try {
-    return await getMatchHistoryByPuuid(puuid);
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      return { error: error.message };
-    }
-    return { error: 'An unknown error occurred' };
-  }
-});
-
-ipcMain.handle('get-ranked-stats', async (_event, puuid: string) => {
-  try {
-    return await getRankedStats(puuid);
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      return { error: error.message };
-    }
-    return { error: 'An unknown error occurred' };
-  }
-});
-
-ipcMain.handle('get-opgg-champion-stats', async (_event, forceRefresh?: boolean) => {
-  try {
-    return await getOpggChampionStats(Boolean(forceRefresh));
-  } catch (error: unknown) {
-    if (error instanceof Error) {
-      return { error: error.message };
-    }
-    return { error: 'An unknown error occurred' };
-  }
-});
-
-// Register custom scheme (must be called before app.ready).
-protocol.registerSchemesAsPrivileged([
-  { scheme: 'cached-cdragon', privileges: { standard: true, secure: true, supportFetchAPI: true } },
-]);
-
-// Handle creating/removing shortcuts on Windows when installing/uninstalling.
+// 处理 Windows Squirrel 安装、更新和卸载事件。
 if (started) {
   app.quit();
 }
 
-const appIcon = path.join(__dirname, '../../assets/icon.png');
-
-const createWindow = () => {
-  // Create the browser window.
-  const mainWindow = new BrowserWindow({
-    width: 800,
-    height: 600,
-    icon: appIcon,
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-    },
-  });
-
-  // and load the index.html of the app.
-  if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
-    mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
-  } else {
-    mainWindow.loadFile(
-      path.join(__dirname, `../renderer/${MAIN_WINDOW_VITE_NAME}/index.html`),
-    );
-  }
-
-  // 如果应用没有被打包（即处于开发环境），则打开 DevTools
-  if (!app.isPackaged) {
-    mainWindow.webContents.openDevTools();
-  }
-};
-
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
-app.on('ready', () => {
-  // macOS程序坞图标
+app.whenReady().then(() => {
   if (process.platform === 'darwin') {
     app.dock?.setIcon(appIcon);
   }
 
-  // Remove default menu bar in production, keep in dev mode
+  // 在打包后的应用中，禁用默认菜单栏。
   if (app.isPackaged) {
     Menu.setApplicationMenu(null);
   }
 
-  // 注册 cache-cdragon 协议处理缓存 (必须在 app.ready 之后调用)
-  protocol.handle('cached-cdragon', async (request) => {
-    try {
-      const { data, mimeType } = await getOrDownloadImage(request.url);
-      return new Response(data, {
-        status: 200,
-        headers: {
-          'content-type': mimeType,
-          'cache-control': 'public, max-age=31536000, immutable',
-        },
-      });
-    } catch {
-      return new Response('', { status: 404 });
+  registerCachedCdragonRequestHandler();
+  createMainWindow();
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createMainWindow();
     }
   });
-
-  createWindow();
 });
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
   }
 });
-
-app.on('activate', () => {
-  // On OS X it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
-  }
-});
-
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and import them here.

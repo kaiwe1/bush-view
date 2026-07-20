@@ -2,7 +2,7 @@
   "name": "bush-view",
   "productName": "bush-view",
   "version": "1.0.1",
-  "description": "League of Legends match data analysis tool.",
+  "description": "League of Legends Tencent server data analysis tool.",
   "main": ".vite/build/main.js",
   "private": true,
   "scripts": {
@@ -14,8 +14,8 @@
   },
   "keywords": [],
   "author": {
-    "name": "kaiwei",
-    "email": "me@kaiweizhang.com"
+    "name": "kaiwei zhang",
+    "email": "kaiwei.zhqwq@gmail.com"
   },
   "license": "GPL-3.0",
   "devDependencies": {
