@@ -14,8 +14,6 @@ const CACHE_TTL_MS = 15 * 60 * 1000;
 
 let cache: { expiresAt: number; data: OpggChampionStats } | null = null;
 
-type PlainObject = Record<string, unknown>;
-
 interface PositionConfig {
   key: OpggChampionPositionKey;
   name: string;
@@ -28,6 +26,9 @@ interface ParsedChampionPage {
   champions: OpggChampionTierRow[];
 }
 
+/**
+ * op.gg 不同位置的 URL 配置
+ */
 const POSITIONS: PositionConfig[] = [
   { key: 'top', name: '上路' },
   { key: 'jungle', name: '打野' },
@@ -36,6 +37,9 @@ const POSITIONS: PositionConfig[] = [
   { key: 'support', name: '辅助' },
 ];
 
+/**
+ * 使用 axios 请求 op.gg 英雄榜单数据, 并使用 cheerio 解析 HTML 页面, 提取榜单数据
+ */
 export async function getOpggChampionStats(forceRefresh = false): Promise<OpggChampionStats> {
   if (!forceRefresh && cache && cache.expiresAt > Date.now()) {
     return cache.data;
@@ -105,8 +109,7 @@ async function fetchOpggPositionStats(
 function parseOpggChampionPage(html: string): ParsedChampionPage {
   const $ = cheerio.load(html);
   const pageText = normalizeText($('body').text());
-  const structuredRows = parseStructuredRows($);
-  const tableRows = structuredRows.length > 0 ? [] : parseTableRows($);
+  const tableRows = parseTableRows($);
 
   return {
     patch: findFirstMatch(pageText, [/Patch\s+([\d.]+)/i, /Ver:\s*([\d.]+)/i]),
@@ -116,7 +119,7 @@ function parseOpggChampionPage(html: string): ParsedChampionPage {
     totalSamples: parseInteger(
       findFirstMatch(pageText, [/总样本数\s*:?\s*([\d,]+)/i, /Total analyzed samples\s*:?\s*([\d,]+)/i]),
     ),
-    champions: dedupeRows(structuredRows.length > 0 ? structuredRows : tableRows),
+    champions: dedupeRows(tableRows),
   };
 }
 
@@ -132,102 +135,6 @@ function localizeChampionRows(
 
 function getPositionUrl(position: OpggChampionPositionKey): string {
   return `${OPGG_CHAMPIONS_BASE_URL}?tier=emerald_plus&position=${position}`;
-}
-
-function parseStructuredRows($: cheerio.CheerioAPI): OpggChampionTierRow[] {
-  const rows: OpggChampionTierRow[] = [];
-
-  // 遍历页面中所有的 script 标签, 因为 op.gg 这类页面通常会把服务端渲染用的数据塞进 script 标签中.
-  $('script').each((_index, element) => {
-    const raw = $(element).html();
-    if (!raw || !raw.includes('champion')) return;
-
-    const json = parseJsonScript(raw);
-    if (!json) return;
-
-    // 递归遍历 JSON 对象, 收集所有符合条件的榜单数据
-    collectChampionRows(json, rows);
-  });
-
-  return rows;
-}
-
-function parseJsonScript(raw: string): unknown | null {
-  const trimmed = raw.trim();
-  if (!trimmed.startsWith('{') && !trimmed.startsWith('[')) return null;
-
-  try {
-    return JSON.parse(trimmed);
-  } catch {
-    return null;
-  }
-}
-
-function collectChampionRows(value: unknown, rows: OpggChampionTierRow[]): void {
-  if (Array.isArray(value)) {
-    const parsedRows = value
-      .map((item, index) => mapObjectToRow(item, index + 1))
-      .filter((row): row is OpggChampionTierRow => row !== null);
-
-    if (parsedRows.length >= 5) {
-      rows.push(...parsedRows);
-      return;
-    }
-
-    value.forEach((item) => collectChampionRows(item, rows));
-    return;
-  }
-
-  if (!isPlainObject(value)) return;
-
-  Object.values(value).forEach((child) => collectChampionRows(child, rows));
-}
-
-function mapObjectToRow(value: unknown, fallbackRank: number): OpggChampionTierRow | null {
-  if (!isPlainObject(value)) return null;
-
-  const championName = getChampionName(value);
-  if (!championName) return null;
-
-  const winRate = readRate(value, [
-    'winRate',
-    'win_rate',
-    'winningRate',
-    'winning_rate',
-    'winRatio',
-    'win_ratio',
-  ]);
-  const pickRate = readRate(value, ['pickRate', 'pick_rate', 'pickRatio', 'pick_ratio']);
-  const banRate = readRate(value, ['banRate', 'ban_rate', 'banRatio', 'ban_ratio']);
-  const tier = readValue(value, ['tier', 'opTier', 'op_tier', 'tierRank', 'tier_rank']);
-  const rank = readNumber(value, ['rank', 'ranking', 'order', 'sortOrder', 'sort_order']);
-
-  if (winRate === undefined && pickRate === undefined && tier === undefined && rank === undefined) {
-    return null;
-  }
-
-  return {
-    rank: rank ?? fallbackRank,
-    championName,
-    championKey: getChampionKey(value),
-    imageUrl: readString(value, ['imageUrl', 'image_url', 'iconUrl', 'icon_url', 'image']),
-    position: normalizePosition(readString(value, ['position', 'role', 'lane'])),
-    tier: normalizeTier(tier),
-    winRate,
-    pickRate,
-    banRate,
-    games: readNumber(value, [
-      'games',
-      'gameCount',
-      'game_count',
-      'play',
-      'playCount',
-      'play_count',
-      'sampleSize',
-      'sample_size',
-    ]),
-    weakAgainst: readWeakAgainst(value),
-  };
 }
 
 function parseTableRows($: cheerio.CheerioAPI): OpggChampionTierRow[] {
@@ -298,120 +205,6 @@ function getCounterChampionsFromRow(
   });
 
   return counters.slice(0, 3);
-}
-
-function readWeakAgainst(source: PlainObject): OpggWeakAgainstChampion[] {
-  const value = readValue(source, [
-    'weakAgainst',
-    'weak_against',
-    'counters',
-    'counter',
-    'counterChampions',
-    'counter_champions',
-    'counteredBy',
-    'countered_by',
-  ]);
-
-  if (!Array.isArray(value)) return [];
-
-  return value
-    .map((item): OpggWeakAgainstChampion | null => {
-      if (!isPlainObject(item)) return null;
-      const championName = getChampionName(item);
-      if (!championName) return null;
-
-      return {
-        championName,
-        championKey: getChampionKey(item),
-        imageUrl: readString(item, ['imageUrl', 'image_url', 'iconUrl', 'icon_url', 'image']),
-        winRateAgainst: readRate(item, ['winRate', 'win_rate', 'winningRate', 'winning_rate']),
-      };
-    })
-    .filter((item): item is OpggWeakAgainstChampion => item !== null)
-    .slice(0, 3);
-}
-
-function getChampionName(source: PlainObject): string | undefined {
-  const direct = readString(source, [
-    'championName',
-    'champion_name',
-    'displayName',
-    'display_name',
-    'name',
-  ]);
-  if (direct) return direct;
-
-  for (const key of ['champion', 'championInfo', 'champion_info']) {
-    const nested = source[key];
-    if (isPlainObject(nested)) {
-      const name = getChampionName(nested);
-      if (name) return name;
-    }
-  }
-
-  return undefined;
-}
-
-function getChampionKey(source: PlainObject): string | undefined {
-  const direct = readString(source, [
-    'championKey',
-    'champion_key',
-    'championId',
-    'champion_id',
-    'key',
-    'id',
-    'slug',
-  ]);
-  if (direct) return direct;
-
-  for (const key of ['champion', 'championInfo', 'champion_info']) {
-    const nested = source[key];
-    if (isPlainObject(nested)) {
-      const championKey = getChampionKey(nested);
-      if (championKey) return championKey;
-    }
-  }
-
-  return undefined;
-}
-
-function readValue(source: PlainObject, keys: string[]): unknown {
-  for (const key of keys) {
-    if (source[key] !== undefined && source[key] !== null) return source[key];
-  }
-
-  for (const child of Object.values(source)) {
-    if (!isPlainObject(child)) continue;
-    const value = readValue(child, keys);
-    if (value !== undefined && value !== null) return value;
-  }
-
-  return undefined;
-}
-
-function readString(source: PlainObject, keys: string[]): string | undefined {
-  const value = readValue(source, keys);
-  if (typeof value === 'string' && value.trim()) return cleanText(value);
-  if (typeof value === 'number') return String(value);
-  return undefined;
-}
-
-function readNumber(source: PlainObject, keys: string[]): number | undefined {
-  return parseNumber(readValue(source, keys));
-}
-
-function readRate(source: PlainObject, keys: string[]): number | undefined {
-  const value = parseNumber(readValue(source, keys));
-  if (value === undefined) return undefined;
-  return value > 0 && value <= 1 ? value * 100 : value;
-}
-
-function normalizeTier(value: unknown): number | string | undefined {
-  if (typeof value === 'number') return value;
-  if (typeof value !== 'string') return undefined;
-  const text = cleanText(value);
-  const numeric = text.match(/\d+/)?.[0];
-  return numeric ? Number(numeric) : text;
 }
 
 function normalizePosition(value?: string): string | undefined {
@@ -602,8 +395,4 @@ function localizeRelativeTime(value?: string): string | undefined {
   };
 
   return `${amount} ${unitMap[match[2]] ?? match[2]}前`;
-}
-
-function isPlainObject(value: unknown): value is PlainObject {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
